@@ -1,7 +1,7 @@
 use crate::enums::BuySellIndicator;
 use crate::messageheader::MessageHeader;
+use crate::types::{Parse, ParseError};
 use byteorder::{BigEndian, ByteOrder};
-use std::error::Error;
 
 #[derive(Debug, PartialEq)]
 pub struct AddOrder {
@@ -13,13 +13,13 @@ pub struct AddOrder {
     price: u32,
 }
 
-impl AddOrder {
-    pub fn parse(input: &[u8]) -> AddOrder {
+impl Parse for AddOrder {
+    fn parse(input: &[u8]) -> Result<Self, ParseError> {
         if input.len() != 35 {
             panic!("Invalid input length for AddOrderMessage");
         }
 
-        AddOrder {
+        Ok(AddOrder {
             header: MessageHeader::parse(&input[..10]),
             order_reference_number: BigEndian::read_u64(&input[10..18]),
             buy_sell_indicator: {
@@ -32,7 +32,7 @@ impl AddOrder {
             shares: BigEndian::read_u32(&input[19..23]),
             stock: input[23..31].try_into().unwrap(),
             price: BigEndian::read_u32(&input[31..35]),
-        }
+        })
     }
 }
 
@@ -42,16 +42,17 @@ pub struct AddOrderMPID {
     mpid: [u8; 4],
 }
 
-impl AddOrderMPID {
-    pub fn parse(input: &[u8]) -> AddOrderMPID {
+impl Parse for AddOrderMPID {
+    fn parse(input: &[u8]) -> Result<Self, ParseError> {
         if input.len() != 39 {
             panic!("Invalid input length for AddOrderMPID");
         }
 
-        AddOrderMPID {
+        Ok(AddOrderMPID {
             // header: MessageHeader::parse(&input[..10]),
-            add_order_message: AddOrder::parse(&input[..35]),
+            add_order_message: AddOrder::parse(&input[..35])
+                .expect("Failed to parse AddOrderMPID: Invalid add_order header."),
             mpid: input[35..39].try_into().unwrap(),
-        }
+        })
     }
 }

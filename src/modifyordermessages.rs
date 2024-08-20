@@ -1,3 +1,4 @@
+use crate::types::{Parse, ParseError};
 use crate::{helpers::byte_to_bool, messageheader::MessageHeader};
 use byteorder::{BigEndian, ByteOrder};
 
@@ -9,18 +10,18 @@ pub struct OrderExecuted {
     match_number: u64, // matches trade break message
 }
 
-impl OrderExecuted {
-    pub fn parse(input: &[u8]) -> OrderExecuted {
+impl Parse for OrderExecuted {
+    fn parse(input: &[u8]) -> Result<Self, ParseError> {
         if input.len() != 30 {
-            panic!("Invalid input length for OrderExecutedMessage");
+            return Err(ParseError::IncompleteMessage { expected: 30 });
         }
 
-        OrderExecuted {
+        Ok(OrderExecuted {
             header: MessageHeader::parse(&input[..10]),
             order_reference_number: BigEndian::read_u64(&input[10..18]),
             executed_shares: BigEndian::read_u32(&input[18..22]),
             match_number: BigEndian::read_u64(&input[22..30]),
-        }
+        })
     }
 }
 
@@ -31,17 +32,18 @@ pub struct OrderExecutedWithPrice {
     exec_price: u32,
 }
 
-impl OrderExecutedWithPrice {
-    pub fn parse(input: &[u8]) -> OrderExecutedWithPrice {
+impl Parse for OrderExecutedWithPrice {
+    fn parse(input: &[u8]) -> Result<Self, ParseError> {
         if input.len() != 35 {
-            panic!("Invalid input length for OrderExecutedWithPriceMessage");
+            return Err(ParseError::IncompleteMessage { expected: 35 });
         }
 
-        OrderExecutedWithPrice {
-            order_executed_message: OrderExecuted::parse(&input[..30]),
+        Ok(OrderExecutedWithPrice {
+            order_executed_message: OrderExecuted::parse(&input[..30])
+                .expect("Failed to parse OrderExecutedWithPrice: Invalid order_executed header."),
             printable: byte_to_bool(input[30]),
             exec_price: BigEndian::read_u32(&input[31..35]),
-        }
+        })
     }
 }
 
@@ -57,17 +59,17 @@ pub struct OrderCancel {
 // 10-17: Order Reference Number (8 bytes)
 // 18-21: Canceled Shares (4 bytes)
 // Total: 23 bytes
-impl OrderCancel {
-    pub fn parse(input: &[u8]) -> OrderCancel {
+impl Parse for OrderCancel {
+    fn parse(input: &[u8]) -> Result<Self, ParseError> {
         if input.len() != 22 {
-            panic!("Invalid input length for OrderCancelMessage");
+            return Err(ParseError::IncompleteMessage { expected: 22 });
         }
 
-        OrderCancel {
+        Ok(OrderCancel {
             header: MessageHeader::parse(&input[..10]),
             order_reference_number: BigEndian::read_u64(&input[10..18]),
             canceled_shares: BigEndian::read_u32(&input[18..22]),
-        }
+        })
     }
 }
 
@@ -77,16 +79,16 @@ pub struct OrderDelete {
     order_reference_number: u64,
 }
 
-impl OrderDelete {
-    pub fn parse(input: &[u8]) -> OrderDelete {
+impl Parse for OrderDelete {
+    fn parse(input: &[u8]) -> Result<Self, ParseError> {
         if input.len() != 19 {
-            panic!("Invalid input length for OrderDeleteMessage");
+            return Err(ParseError::IncompleteMessage { expected: 19 });
         }
 
-        OrderDelete {
+        Ok(OrderDelete {
             header: MessageHeader::parse(&input[..10]),
             order_reference_number: BigEndian::read_u64(&input[10..18]),
-        }
+        })
     }
 }
 
@@ -99,18 +101,18 @@ pub struct OrderReplace {
     price: u32,
 }
 
-impl OrderReplace {
-    pub fn parse(input: &[u8]) -> OrderReplace {
+impl Parse for OrderReplace {
+    fn parse(input: &[u8]) -> Result<Self, ParseError> {
         if input.len() != 35 {
-            panic!("Invalid input length for OrderReplaceMessage");
+            return Err(ParseError::IncompleteMessage { expected: 35 });
         }
 
-        OrderReplace {
+        Ok(OrderReplace {
             header: MessageHeader::parse(&input[..10]),
             original_order_reference_number: BigEndian::read_u64(&input[10..18]),
             new_order_reference_number: BigEndian::read_u64(&input[18..26]),
             shares: BigEndian::read_u32(&input[26..30]),
             price: BigEndian::read_u32(&input[30..34]),
-        }
+        })
     }
 }

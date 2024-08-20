@@ -2,6 +2,7 @@ use byteorder::{BigEndian, ByteOrder};
 use ringbuf::{traits::*, HeapRb};
 use std::fs::File;
 use std::io::{self, Read, Seek, Write};
+use types::{Parse, ParseError};
 
 use systemmessages::*;
 
@@ -19,16 +20,19 @@ pub mod types;
 const BUFFER_SIZE: usize = 1024 * 1024; // Heap allocated
 const DISCARD_SIZE: usize = 512 * 1024;
 
-fn parse_fixed_length_message<const N: usize, T, F, C>(consumer: &mut C, parser: F) -> Option<T>
+fn parse_fixed_length_message<const N: usize, T, F, C>(
+    consumer: &mut C,
+    parser: F,
+) -> Result<T, ParseError>
 where
     C: Consumer<Item = u8>,
     F: FnOnce(&[u8]) -> T,
 {
     let mut buffer = [0u8; N];
     if consumer.pop_slice(&mut buffer) == N {
-        Some(parser(&buffer))
+        Ok(parser(&buffer))
     } else {
-        None
+        Err(ParseError::IncompleteMessage { expected: N })
     }
 }
 
@@ -206,7 +210,7 @@ fn main() -> Result<(), io::Error> {
                 } // _ => panic!("Unknown message type '{}'", message_type as char),
             }
             msg_ct += 1;
-            if msg_ct % 1_000_000 == 1 {
+            if msg_ct % 10_000_000 == 1 {
                 println!("Processed {}m messages", msg_ct / 1_000_000);
             }
         }

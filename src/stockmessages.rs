@@ -6,9 +6,8 @@ use crate::enums::{
 };
 use crate::helpers::{byte_to_bool, byte_to_bool_space, u8s_to_ticker};
 use crate::messageheader::MessageHeader;
+use crate::types::{Parse, ParseError, Stock};
 use byteorder::{BigEndian, ByteOrder};
-use std::error::Error;
-use std::string;
 
 #[derive(Debug, PartialEq)]
 pub struct StockDirectory {
@@ -29,13 +28,13 @@ pub struct StockDirectory {
     inverse_indicator: bool,
 }
 
-impl StockDirectory {
-    pub fn parse(input: &[u8]) -> StockDirectory {
+impl Parse for StockDirectory {
+    fn parse(input: &[u8]) -> Result<Self, ParseError> {
         if input.len() != 38 {
             panic!("Invalid input length for StockDirectory");
         }
 
-        StockDirectory {
+        Ok(StockDirectory {
             header: MessageHeader::parse(&input[..10]),
             stock: u8s_to_ticker(&input[10..18]),
             market_category: {
@@ -48,7 +47,11 @@ impl StockDirectory {
                     b'P' => MarketCategory::NYSEArca,
                     b'Z' => MarketCategory::BATS,
                     b' ' => MarketCategory::Unavailable,
-                    _ => panic!("Invalid MarketCategory: '{}'", input[18] as char),
+                    _ => {
+                        return Err(ParseError::InvalidMarketCategory {
+                            invalid_byte: input[18],
+                        })
+                    }
                 }
             },
             // market_category: input[18] as char,
@@ -65,7 +68,11 @@ impl StockDirectory {
                     b'C' => FinancialStatusIndicator::CreationsAndRedemptionsSuspended,
                     b'N' => FinancialStatusIndicator::Normal,
                     b' ' => FinancialStatusIndicator::NotAvailable,
-                    _ => panic!("Invalid FinancialStatusIndicator: '{}'", input[19] as char),
+                    _ => {
+                        return Err(ParseError::InvalidFinancialStatusIndicator {
+                            invalid_byte: input[19],
+                        })
+                    }
                 }
             },
             round_lot_size: BigEndian::read_u32(&input[20..24]),
@@ -79,7 +86,11 @@ impl StockDirectory {
                     b'Y' => ShortSaleThresholdIndicator::Restricted,
                     b'N' => ShortSaleThresholdIndicator::NotRestricted,
                     b' ' => ShortSaleThresholdIndicator::NotAvailable,
-                    _ => panic!("Invalid ShortSaleThresholdIndicator"),
+                    _ => {
+                        return Err(ParseError::InvalidShortSaleThresholdIndicator {
+                            invalid_byte: input[29],
+                        })
+                    }
                 }
             },
             ipo_flag: input[30] as char,
@@ -87,18 +98,18 @@ impl StockDirectory {
             etp_flag: byte_to_bool_space(input[32]),
             etp_leverage_factor: BigEndian::read_u32(&input[33..37]),
             inverse_indicator: byte_to_bool(input[37]), // We only read up to index 37 (38 bytes), 1 less because of match. max spec offset-1
-        }
+        })
     }
 }
 
 #[inline]
-fn parse_issue_classification_code(code: &u8) -> Result<IssueClassificationValues, Box<dyn Error>> {
+fn parse_issue_classification_code(code: &u8) -> Result<IssueClassificationValues, ParseError> {
     match code {
         b'A' => Ok(IssueClassificationValues::AmericanDepositaryShare),
         b'B' => Ok(IssueClassificationValues::Bond),
         b'C' => Ok(IssueClassificationValues::CommonStock),
         b'F' => Ok(IssueClassificationValues::DepositoryReceipt),
-        b'I' => Ok(IssueClassificationValues::UnregisteredSecurity), // Rule 144a
+        b'I' => Ok(IssueClassificationValues::UnregisteredSecurity), // SEC Rule 144a
         b'L' => Ok(IssueClassificationValues::LimitedPartnership),
         b'N' => Ok(IssueClassificationValues::Notes),
         b'O' => Ok(IssueClassificationValues::OrdinaryShare),
@@ -110,15 +121,16 @@ fn parse_issue_classification_code(code: &u8) -> Result<IssueClassificationValue
         b'U' => Ok(IssueClassificationValues::Unit),
         b'V' => Ok(IssueClassificationValues::UnitBenifInt),
         b'W' => Ok(IssueClassificationValues::Warrant),
-        _ => Err(Box::new(std::io::Error::new(
-            std::io::ErrorKind::InvalidData,
-            "Invalid issue classification code",
-        ))),
+        _ => {
+            return Err(ParseError::InvalidIssueClassificationCode {
+                invalid_byte: *code,
+            })
+        }
     }
 }
 
 #[inline]
-fn parse_trading_reason_code(code: &[u8]) -> Result<TradingReasonCodes, Box<dyn Error>> {
+fn parse_trading_reason_code(code: &[u8]) -> Result<TradingReasonCodes, ParseError> {
     match code {
         b"T1" => Ok(TradingReasonCodes::Halt(
             TradingHaltReasonCodes::HaltNewsPending,
@@ -217,10 +229,7 @@ fn parse_trading_reason_code(code: &[u8]) -> Result<TradingReasonCodes, Box<dyn 
         b"    " => Ok(TradingReasonCodes::Halt(
             TradingHaltReasonCodes::NotAvailable,
         )),
-        _ => Err(Box::new(std::io::Error::new(
-            std::io::ErrorKind::InvalidData,
-            "Invalid trading reason code",
-        ))),
+        _ => return Err(ParseError::InvalidTradingReasonCode),
     }
 }
 
@@ -233,13 +242,13 @@ pub struct StockTradingAction {
     reason: TradingReasonCodes,
 }
 
-impl StockTradingAction {
-    pub fn parse(input: &[u8]) -> StockTradingAction {
+impl Parse for StockTradingAction {
+    fn parse(input: &[u8]) -> Result<Self, ParseError> {
         if input.len() != 24 {
-            panic!("Invalid input length for StockTradingAction");
+            return Err(ParseError::IncompleteMessage { expected: 24 });
         }
 
-        StockTradingAction {
+        Ok(StockTradingAction {
             header: MessageHeader::parse(&input[..10]),
             stock: BigEndian::read_u64(&input[10..18]),
             trading_state: {
@@ -248,41 +257,48 @@ impl StockTradingAction {
                     b'P' => TradingState::Paused,
                     b'Q' => TradingState::QuotationOnly,
                     b'T' => TradingState::Trading,
-                    _ => panic!("Invalid TradingState"),
+                    _ => {
+                        return Err(ParseError::InvalidTradingState {
+                            invalid_byte: input[18],
+                        })
+                    }
                 }
             },
             reserved: input[19],
-            reason: parse_trading_reason_code(&input[19..23])
-                .expect(&format!("Invalid trading reason code {:?}", &input[19..23])),
-        }
+            reason: parse_trading_reason_code(&input[19..23])?,
+        })
     }
 }
 
 #[derive(Debug, PartialEq)]
 pub struct RegSHOShortSalePriceTestRestriction {
     header: MessageHeader,
-    stock: u64,
+    stock: Stock,
     reg_sho_action: RegSHOAction,
 }
 
-impl RegSHOShortSalePriceTestRestriction {
-    pub fn parse(input: &[u8]) -> RegSHOShortSalePriceTestRestriction {
+impl Parse for RegSHOShortSalePriceTestRestriction {
+    fn parse(input: &[u8]) -> Result<Self, ParseError> {
         if input.len() != 19 {
-            panic!("Invalid input length for RegSHOShortSalePriceTestRestriction");
+            return Err(ParseError::IncompleteMessage { expected: 19 });
         }
 
-        RegSHOShortSalePriceTestRestriction {
+        Ok(RegSHOShortSalePriceTestRestriction {
             header: MessageHeader::parse(&input[..10]),
-            stock: BigEndian::read_u64(&input[10..18]), // We only read up to index 18, 1 less because of match. max spec offset-1
+            stock: input[10..18].try_into().unwrap(), // We only read up to index 18, 1 less because of match. max spec offset-1
             reg_sho_action: {
                 match input[18] {
                     b'0' => RegSHOAction::NoPriceTestInEffect,
                     b'1' => RegSHOAction::RegSHOShortSalePriceTestRestriction,
                     b'2' => RegSHOAction::TestRestrictionRemains,
-                    _ => panic!("Invalid RegSHOAction"),
+                    _ => {
+                        return Err(ParseError::InvalidRegSHOAction {
+                            invalid_byte: input[18],
+                        })
+                    }
                 }
             },
-        }
+        })
     }
 }
 
@@ -290,25 +306,22 @@ impl RegSHOShortSalePriceTestRestriction {
 pub struct MarketParticipantPosition {
     header: MessageHeader,
     mp_id: u32,
-    stock: u64,
+    stock: Stock,
     primary_market_maker: bool,
     market_maker_mode: MarketMakerMode,
     market_participant_state: MarketParticipantState,
 }
 
-impl MarketParticipantPosition {
-    pub fn parse(input: &[u8]) -> MarketParticipantPosition {
+impl Parse for MarketParticipantPosition {
+    fn parse(input: &[u8]) -> Result<Self, ParseError> {
         if input.len() != 25 {
-            panic!(
-                "Invalid input length for MarketParticipantPosition. Got: {}",
-                input.len()
-            );
+            return Err(ParseError::IncompleteMessage { expected: 25 });
         }
 
-        MarketParticipantPosition {
+        Ok(MarketParticipantPosition {
             header: MessageHeader::parse(&input[..10]),
             mp_id: BigEndian::read_u32(&input[10..14]),
-            stock: BigEndian::read_u64(&input[14..22]),
+            stock: input[14..22].try_into().unwrap(),
             primary_market_maker: byte_to_bool(input[22]),
             market_maker_mode: {
                 match input[23] {
@@ -317,7 +330,11 @@ impl MarketParticipantPosition {
                     b'S' => MarketMakerMode::Syndicate,
                     b'R' => MarketMakerMode::PreSyndicate,
                     b'L' => MarketMakerMode::Penalty,
-                    _ => panic!("Invalid MarketMakerMode: '{}'", input[23]),
+                    _ => {
+                        return Err(ParseError::InvalidMarketMakerMode {
+                            invalid_byte: input[23],
+                        })
+                    }
                 }
             },
             market_participant_state: {
@@ -327,10 +344,14 @@ impl MarketParticipantPosition {
                     b'W' => MarketParticipantState::Withdrawn,
                     b'S' => MarketParticipantState::Suspended,
                     b'D' => MarketParticipantState::Deleted,
-                    _ => panic!("Invalid MarketParticipantState: '{}'", input[24]),
+                    _ => {
+                        return Err(ParseError::InvalidMarketMakerMode {
+                            invalid_byte: input[24],
+                        })
+                    }
                 }
             },
-        }
+        })
     }
 }
 
@@ -343,18 +364,18 @@ pub struct MWCBDeclineLevel {
     level3: u64,
 }
 
-impl MWCBDeclineLevel {
-    pub fn parse(input: &[u8]) -> MWCBDeclineLevel {
+impl Parse for MWCBDeclineLevel {
+    fn parse(input: &[u8]) -> Result<Self, ParseError> {
         if input.len() != 35 {
-            panic!("Invalid input length for MWCBDeclineLevel");
+            return Err(ParseError::IncompleteMessage { expected: 35 });
         }
 
-        MWCBDeclineLevel {
+        Ok(MWCBDeclineLevel {
             header: MessageHeader::parse(&input[..10]),
             level1: BigEndian::read_u64(&input[10..18]),
             level2: BigEndian::read_u64(&input[18..26]),
             level3: BigEndian::read_u64(&input[26..34]),
-        }
+        })
     }
 }
 
@@ -364,23 +385,27 @@ pub struct MWCBStatus {
     breached_level: MWCBLevel,
 }
 
-impl MWCBStatus {
-    pub fn parse(input: &[u8]) -> MWCBStatus {
+impl Parse for MWCBStatus {
+    fn parse(input: &[u8]) -> Result<Self, ParseError> {
         if input.len() != 11 {
-            panic!("Invalid input length for MWCBStatus");
+            return Err(ParseError::IncompleteMessage { expected: 11 });
         }
 
-        MWCBStatus {
+        Ok(MWCBStatus {
             header: MessageHeader::parse(&input[..10]),
             breached_level: {
                 match input[10] {
                     b'1' => MWCBLevel::Level1,
                     b'2' => MWCBLevel::Level2,
                     b'3' => MWCBLevel::Level3,
-                    _ => panic!("Invalid MWCBLevel"),
+                    _ => {
+                        return Err(ParseError::InvalidMWCBLevel {
+                            invalid_byte: input[24],
+                        })
+                    }
                 }
             },
-        }
+        })
     }
 }
 
@@ -393,13 +418,13 @@ pub struct IPOQuotingPeriodUpdate {
     IPO_price: u32,
 }
 
-impl IPOQuotingPeriodUpdate {
-    pub fn parse(input: &[u8]) -> IPOQuotingPeriodUpdate {
+impl Parse for IPOQuotingPeriodUpdate {
+    fn parse(input: &[u8]) -> Result<Self, ParseError> {
         if input.len() != 27 {
-            panic!("Invalid input length for IPOQuotingPeriod");
+            return Err(ParseError::IncompleteMessage { expected: 27 });
         }
 
-        IPOQuotingPeriodUpdate {
+        Ok(IPOQuotingPeriodUpdate {
             header: MessageHeader::parse(&input[..10]),
             stock: BigEndian::read_u64(&input[10..18]),
             IPO_quotation_release_time: BigEndian::read_u32(&input[18..22]),
@@ -407,10 +432,14 @@ impl IPOQuotingPeriodUpdate {
                 match input[22] {
                     b'A' => IPOReleaseQualifier::Anticipated,
                     b'P' => IPOReleaseQualifier::Postponed,
-                    _ => panic!("Invalid IPOReleaseQualifier"),
+                    _ => {
+                        return Err(ParseError::InvalidIPOQuotationReleaseQualifier {
+                            invalid_byte: input[22],
+                        })
+                    }
                 }
             },
             IPO_price: BigEndian::read_u32(&input[23..27]),
-        }
+        })
     }
 }

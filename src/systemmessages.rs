@@ -1,5 +1,6 @@
 use crate::enums::SystemEventCode;
 use crate::messageheader::MessageHeader;
+use crate::types::{Parse, ParseError};
 
 #[derive(Debug, PartialEq)]
 pub struct SystemEventMessage {
@@ -7,13 +8,13 @@ pub struct SystemEventMessage {
     event_code: SystemEventCode,
 }
 
-impl SystemEventMessage {
-    pub fn parse(input: &[u8]) -> SystemEventMessage {
+impl Parse for SystemEventMessage {
+    fn parse(input: &[u8]) -> Result<Self, ParseError> {
         if input.len() != 11 {
-            panic!("Invalid input length for SystemEventMessage");
+            return Err(ParseError::IncompleteMessage { expected: 11 });
         }
 
-        SystemEventMessage {
+        Ok(SystemEventMessage {
             header: MessageHeader::parse(&input[..10]),
             event_code: {
                 match input[10] {
@@ -26,6 +27,6 @@ impl SystemEventMessage {
                     _ => panic!("Invalid SystemEventCode"),
                 }
             }, // We only read up to index 10, 1 less because of match. max spec offset-1
-        }
+        })
     }
 }

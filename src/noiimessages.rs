@@ -1,5 +1,6 @@
 use crate::enums::{CrossType, ImbalanceDirection};
 use crate::messageheader::MessageHeader;
+use crate::types::{Parse, ParseError};
 use byteorder::{BigEndian, ByteOrder};
 
 #[derive(Debug, PartialEq)]
@@ -16,13 +17,13 @@ pub struct NetOrderImbalanceIndicator {
     price_variation_indicator: char,
 }
 
-impl NetOrderImbalanceIndicator {
-    pub fn parse(input: &[u8]) -> NetOrderImbalanceIndicator {
+impl Parse for NetOrderImbalanceIndicator {
+    fn parse(input: &[u8]) -> Result<Self, ParseError> {
         if input.len() != 50 {
-            panic!("Invalid input length for NetOrderImbalanceIndicator");
+            return Err(ParseError::IncompleteMessage { expected: 50 });
         }
 
-        NetOrderImbalanceIndicator {
+        Ok(NetOrderImbalanceIndicator {
             header: MessageHeader::parse(&input[..10]),
             paired_shares: BigEndian::read_u64(&input[10..18]),
             imbalance_shares: BigEndian::read_u64(&input[18..26]),
@@ -64,7 +65,7 @@ impl NetOrderImbalanceIndicator {
                     _ => panic!("Invalid price_variation_indicator"),
                 }
             },
-        }
+        })
     }
 }
 
@@ -75,16 +76,16 @@ pub struct RetainPriceImprovementIndicator {
     interest_flag: char,
 }
 
-impl RetainPriceImprovementIndicator {
-    pub fn parse(input: &[u8]) -> RetainPriceImprovementIndicator {
+impl Parse for RetainPriceImprovementIndicator {
+    fn parse(input: &[u8]) -> Result<Self, ParseError> {
         if input.len() != 19 {
-            panic!("Invalid input length for RetainPriceImprovementIndicator");
+            return Err(ParseError::IncompleteMessage { expected: 19 });
         }
 
-        RetainPriceImprovementIndicator {
+        Ok(RetainPriceImprovementIndicator {
             header: MessageHeader::parse(&input[..10]),
             stock: input[10..18].try_into().unwrap(),
             interest_flag: input[18] as char,
-        }
+        })
     }
 }

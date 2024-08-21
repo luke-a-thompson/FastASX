@@ -22,13 +22,7 @@ impl Parse for AddOrder {
         Ok(AddOrder {
             header: MessageHeader::parse(&input[..10]),
             order_reference_number: BigEndian::read_u64(&input[10..18]),
-            buy_sell_indicator: {
-                match input[18] {
-                    b'B' => BuySellIndicator::Buy,
-                    b'S' => BuySellIndicator::Sell,
-                    _ => panic!("Invalid BuySellIndicator {:?}", input[18] as char),
-                }
-            },
+            buy_sell_indicator: BuySellIndicator::try_from(input[18])?,
             shares: BigEndian::read_u32(&input[19..23]),
             stock: input[23..31].try_into().unwrap(),
             price: BigEndian::read_u32(&input[31..35]),

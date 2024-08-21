@@ -1,6 +1,8 @@
 use crate::enums::SystemEventCode;
 use crate::messageheader::MessageHeader;
-use crate::types::{Parse, ParseError};
+use crate::types::{
+    BinaryMessageLength, EnumTestHelpers, GenerateBinaryExample, Parse, ParseError,
+};
 
 #[derive(Debug, PartialEq)]
 pub struct SystemEventMessage {
@@ -16,21 +18,25 @@ impl Parse for SystemEventMessage {
 
         Ok(SystemEventMessage {
             header: MessageHeader::parse(&input[..10]),
-            event_code: {
-                match input[10] {
-                    b'O' => SystemEventCode::StartOfMessages,
-                    b'S' => SystemEventCode::StartOfSystemHours,
-                    b'Q' => SystemEventCode::StartOfMarketHours,
-                    b'M' => SystemEventCode::EndOfMarketHours,
-                    b'E' => SystemEventCode::EndOfSystemHours,
-                    b'C' => SystemEventCode::EndOfMessages,
-                    _ => {
-                        return Err(ParseError::InvalidSystemEventCode {
-                            invalid_byte: input[10],
-                        })
-                    }
-                }
-            }, // We only read up to index 10, 1 less because of match. max spec offset-1
+            event_code: SystemEventCode::try_from(input[10])?,
         })
+    }
+}
+
+impl BinaryMessageLength for SystemEventMessage {
+    const LENGTH: usize = 11;
+}
+
+#[cfg(test)]
+impl GenerateBinaryExample<{ SystemEventMessage::LENGTH }> for SystemEventMessage {
+    fn generate_example_message() -> [u8; SystemEventMessage::LENGTH] {
+        let header = MessageHeader::generate_example_message();
+        let event_code = SystemEventCode::generate_example_code();
+
+        let mut message = [0u8; SystemEventMessage::LENGTH];
+        message[..10].copy_from_slice(&header);
+        message[10] = event_code as u8;
+
+        message
     }
 }

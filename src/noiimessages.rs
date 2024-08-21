@@ -27,28 +27,12 @@ impl Parse for NetOrderImbalanceIndicator {
             header: MessageHeader::parse(&input[..10]),
             paired_shares: BigEndian::read_u64(&input[10..18]),
             imbalance_shares: BigEndian::read_u64(&input[18..26]),
-            imbalance_direction: {
-                match input[26] {
-                    b'B' => ImbalanceDirection::BuyImbalance,
-                    b'S' => ImbalanceDirection::SellImbalance,
-                    b'N' => ImbalanceDirection::NoImbalance,
-                    b'O' => ImbalanceDirection::InsufficnetOrdersToCalculate,
-                    _ => panic!("Invalid ImbalanceDirection"),
-                }
-            },
+            imbalance_direction: ImbalanceDirection::try_from(input[26])?,
             stock: input[27..35].try_into().unwrap(),
             far_price: BigEndian::read_u32(&input[35..39]),
             near_price: BigEndian::read_u32(&input[39..43]),
             current_reference_price: BigEndian::read_u32(&input[43..47]),
-            cross_type: {
-                match input[47] {
-                    b'O' => CrossType::OpeningCross,
-                    b'C' => CrossType::ClosingCross,
-                    b'H' => CrossType::IPOCrossOrHaltedSecurity,
-                    // b'i' => CrossType::IntradayOrPostCloseCross,  // This in invalid for NOII?
-                    _ => panic!("Invalid CrossType"),
-                }
-            },
+            cross_type: CrossType::try_from(input[47])?,
             price_variation_indicator: {
                 match input[48] {
                     b'L' => 'L',
@@ -72,20 +56,21 @@ impl Parse for NetOrderImbalanceIndicator {
     }
 }
 
+// Deprecated?
 #[derive(Debug, PartialEq)]
-pub struct RetainPriceImprovementIndicator {
+pub struct RetailPriceImprovementIndicator {
     header: MessageHeader,
     stock: [u8; 8],
     interest_flag: char,
 }
 
-impl Parse for RetainPriceImprovementIndicator {
+impl Parse for RetailPriceImprovementIndicator {
     fn parse(input: &[u8]) -> Result<Self, ParseError> {
         if input.len() != 19 {
             return Err(ParseError::IncompleteMessage { expected: 19 });
         }
 
-        Ok(RetainPriceImprovementIndicator {
+        Ok(RetailPriceImprovementIndicator {
             header: MessageHeader::parse(&input[..10]),
             stock: input[10..18].try_into().unwrap(),
             interest_flag: input[18] as char,

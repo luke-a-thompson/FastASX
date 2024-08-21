@@ -1,8 +1,12 @@
 use byteorder::{BigEndian, ByteOrder};
 use ringbuf::{traits::*, HeapRb};
 use std::fs::File;
-use std::io::{self, Read, Seek, Write};
+use std::io::{self, Read};
 use types::{Parse, ParseError};
+
+mod benchmarks;
+#[cfg(test)]
+mod tests;
 
 use systemmessages::*;
 
@@ -17,25 +21,8 @@ pub mod systemmessages;
 pub mod trademessages;
 pub mod types;
 
-const FILE_BUFFER_SIZE: usize = 1024 * 1024; // Heap allocated
+const FILE_BUFFER_SIZE: usize = 1024 * 1024; // Stack allocated
 const RING_BUFFER_SIZE: usize = 4096 * 1024; // Heap allocated
-const DISCARD_SIZE: usize = RING_BUFFER_SIZE / 4;
-
-// fn parse_fixed_length_message<const N: usize, T, F, C>(
-//     consumer: &mut C,
-//     parser: F,
-// ) -> Result<T, ParseError>
-// where
-//     C: Consumer<Item = u8>,
-//     F: FnOnce(&[u8]) -> T,
-// {
-//     let mut buffer = [0u8; N];
-//     if consumer.pop_slice(&mut buffer) == N {
-//         Ok(parser(&buffer))
-//     } else {
-//         Err(ParseError::IncompleteMessage { expected: N })
-//     }
-// }
 
 fn parse_fixed_length_message<const N: usize, T, C>(consumer: &mut C) -> Result<T, ParseError>
 where
@@ -73,7 +60,6 @@ fn main() -> Result<(), io::Error> {
         }
 
         producer.push_slice(&file_buffer[..bytes_read]);
-        // .expect("Ringbuffer write error");
 
         // Process data from the ring buffer
         while consumer.vacant_len() < FILE_BUFFER_SIZE {
@@ -86,12 +72,14 @@ fn main() -> Result<(), io::Error> {
                     let event = parse_fixed_length_message::<35, addordermessages::AddOrder, _>(
                         &mut consumer,
                     );
+                    msg_ct += 1;
                     // println!("{:?}", event);
                 }
                 (19, b'B') => {
                     let event = parse_fixed_length_message::<18, trademessages::BrokenTrade, _>(
                         &mut consumer,
                     );
+                    msg_ct += 1;
                     // println!("{:?}", event);
                 }
                 (36, b'C') => {
@@ -100,12 +88,14 @@ fn main() -> Result<(), io::Error> {
                         modifyordermessages::OrderExecutedWithPrice,
                         _,
                     >(&mut consumer);
+                    msg_ct += 1;
                     // println!("{:?}", event);
                 }
                 (19, b'D') => {
                     let event = parse_fixed_length_message::<18, modifyordermessages::OrderDelete, _>(
                         &mut consumer,
                     );
+                    msg_ct += 1;
                     // println!("{:?}", event);
                 }
                 (31, b'E') => {
@@ -113,12 +103,14 @@ fn main() -> Result<(), io::Error> {
                         parse_fixed_length_message::<30, modifyordermessages::OrderExecuted, _>(
                             &mut consumer,
                         );
+                    msg_ct += 1;
                     // println!("{:?}", event);
                 }
                 (40, b'F') => {
                     let event = parse_fixed_length_message::<39, addordermessages::AddOrderMPID, _>(
                         &mut consumer,
                     );
+                    msg_ct += 1;
                     // println!("{:?}", event);
                 }
                 (25, b'H') => {
@@ -126,6 +118,7 @@ fn main() -> Result<(), io::Error> {
                         parse_fixed_length_message::<24, stockmessages::StockTradingAction, _>(
                             &mut consumer,
                         );
+                    msg_ct += 1;
                     // println!("{:?}", event);
                 }
                 (50, b'I') => {
@@ -134,6 +127,7 @@ fn main() -> Result<(), io::Error> {
                         noiimessages::NetOrderImbalanceIndicator,
                         _,
                     >(&mut consumer);
+                    msg_ct += 1;
                     // println!("{:?}", event);
                 }
                 (28, b'K') => {
@@ -141,6 +135,7 @@ fn main() -> Result<(), io::Error> {
                         parse_fixed_length_message::<27, stockmessages::IPOQuotingPeriodUpdate, _>(
                             &mut consumer,
                         );
+                    msg_ct += 1;
                 }
                 (26, b'L') => {
                     let event = parse_fixed_length_message::<
@@ -148,56 +143,64 @@ fn main() -> Result<(), io::Error> {
                         stockmessages::MarketParticipantPosition,
                         _,
                     >(&mut consumer);
+                    msg_ct += 1;
                 }
                 (20, b'N') => {
                     let event = parse_fixed_length_message::<
                         19,
-                        noiimessages::RetainPriceImprovementIndicator,
+                        noiimessages::RetailPriceImprovementIndicator,
                         _,
                     >(&mut consumer);
+                    msg_ct += 1;
                 }
                 (44, b'P') => {
                     let event = parse_fixed_length_message::<43, trademessages::NonCrossingTrade, _>(
                         &mut consumer,
                     );
+                    msg_ct += 1;
                 }
                 (40, b'Q') => {
                     // was very wrong
                     let event = parse_fixed_length_message::<39, trademessages::CrossingTrade, _>(
                         &mut consumer,
                     );
+                    msg_ct += 1;
                 }
                 (39, b'R') => {
                     let event = parse_fixed_length_message::<38, stockmessages::StockDirectory, _>(
                         &mut consumer,
                     );
+                    msg_ct += 1;
                 }
                 (12, b'S') => {
                     let event =
                         parse_fixed_length_message::<11, SystemEventMessage, _>(&mut consumer);
-                    // println!("{:?}", event);
+                    msg_ct += 1;
                 }
                 (35, b'U') => {
                     let event =
                         parse_fixed_length_message::<34, modifyordermessages::OrderReplace, _>(
                             &mut consumer,
                         );
+                    msg_ct += 1;
                 }
                 (35, b'V') => {
-                    // was wrong
                     let event = parse_fixed_length_message::<34, stockmessages::MWCBDeclineLevel, _>(
                         &mut consumer,
                     );
+                    msg_ct += 1;
                 }
                 (12, b'W') => {
                     let event = parse_fixed_length_message::<11, stockmessages::MWCBStatus, _>(
                         &mut consumer,
                     );
+                    msg_ct += 1;
                 }
                 (23, b'X') => {
                     let event = parse_fixed_length_message::<22, modifyordermessages::OrderCancel, _>(
                         &mut consumer,
                     );
+                    msg_ct += 1;
                 }
                 (20, b'Y') => {
                     let event = parse_fixed_length_message::<
@@ -205,12 +208,12 @@ fn main() -> Result<(), io::Error> {
                         stockmessages::RegSHOShortSalePriceTestRestriction,
                         _,
                     >(&mut consumer);
+                    msg_ct += 1;
                 }
                 _ => {
-                    // println!("Non-message type character: {:?}", test);
-                } // _ => panic!("Unknown message type '{}'", message_type as char),
+                    consumer.pop_slice(&mut consumer_slice_size); // Skip useless bytes
+                }
             }
-            msg_ct += 1;
             if msg_ct % 10_000_000 == 1 {
                 println!(
                     "Processed {}m messages contained in {:.2}gb",
@@ -219,9 +222,6 @@ fn main() -> Result<(), io::Error> {
                 );
             }
         }
-        // let mut discard_buffer = [0u8; DISCARD_SIZE];
-        // consumer.pop_slice(&mut discard_buffer);
-        // println!("Discarded: {:?}", discard_buffer);
     }
 
     Ok(())

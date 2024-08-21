@@ -21,8 +21,8 @@ pub mod systemmessages;
 pub mod trademessages;
 pub mod types;
 
-const FILE_BUFFER_SIZE: usize = 1024 * 1024; // Stack allocated
-const RING_BUFFER_SIZE: usize = 4096 * 1024; // Heap allocated
+const FILE_BUFFER_SIZE: usize = 2048 * 1024; // Stack allocated
+const RING_BUFFER_SIZE: usize = 4096 * 2048; // Heap allocated
 
 fn parse_fixed_length_message<const N: usize, T, C>(consumer: &mut C) -> Result<T, ParseError>
 where

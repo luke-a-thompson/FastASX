@@ -400,7 +400,7 @@ impl Parse for MWCBStatus {
                     b'3' => MWCBLevel::Level3,
                     _ => {
                         return Err(ParseError::InvalidMWCBLevel {
-                            invalid_byte: input[24],
+                            invalid_byte: input[10],
                         })
                     }
                 }
@@ -413,9 +413,9 @@ impl Parse for MWCBStatus {
 pub struct IPOQuotingPeriodUpdate {
     header: MessageHeader,
     stock: u64,
-    IPO_quotation_release_time: u32,
-    IPO_quotation_release_qualifier: IPOReleaseQualifier,
-    IPO_price: u32,
+    ipo_quotation_release_time: u32,
+    ipo_quotation_release_qualifier: IPOReleaseQualifier,
+    ipo_price: u32,
 }
 
 impl Parse for IPOQuotingPeriodUpdate {
@@ -427,8 +427,8 @@ impl Parse for IPOQuotingPeriodUpdate {
         Ok(IPOQuotingPeriodUpdate {
             header: MessageHeader::parse(&input[..10]),
             stock: BigEndian::read_u64(&input[10..18]),
-            IPO_quotation_release_time: BigEndian::read_u32(&input[18..22]),
-            IPO_quotation_release_qualifier: {
+            ipo_quotation_release_time: BigEndian::read_u32(&input[18..22]),
+            ipo_quotation_release_qualifier: {
                 match input[22] {
                     b'A' => IPOReleaseQualifier::Anticipated,
                     b'P' => IPOReleaseQualifier::Postponed,
@@ -439,7 +439,7 @@ impl Parse for IPOQuotingPeriodUpdate {
                     }
                 }
             },
-            IPO_price: BigEndian::read_u32(&input[23..27]),
+            ipo_price: BigEndian::read_u32(&input[23..27]),
         })
     }
 }

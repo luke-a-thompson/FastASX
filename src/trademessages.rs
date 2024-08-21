@@ -16,8 +16,8 @@ pub struct NonCrossingTrade {
 
 impl Parse for NonCrossingTrade {
     fn parse(input: &[u8]) -> Result<Self, ParseError> {
-        if input.len() != 44 {
-            return Err(ParseError::IncompleteMessage { expected: 44 });
+        if input.len() != 43 {
+            return Err(ParseError::IncompleteMessage { expected: 43 });
         }
 
         Ok(NonCrossingTrade {
@@ -41,26 +41,34 @@ impl Parse for NonCrossingTrade {
 
 #[derive(Debug, PartialEq)]
 pub struct CrossingTrade {
-    non_crossing_trade: NonCrossingTrade,
+    header: MessageHeader,
+    shares: u32,
+    stock: Stock,
+    cross_price: u32,
+    match_number: u64,
     cross_type: CrossType,
 }
 
 impl Parse for CrossingTrade {
     fn parse(input: &[u8]) -> Result<Self, ParseError> {
-        if input.len() != 45 {
-            return Err(ParseError::IncompleteMessage { expected: 45 });
+        if input.len() != 39 {
+            return Err(ParseError::IncompleteMessage { expected: 39 });
         }
 
         Ok(CrossingTrade {
-            non_crossing_trade: NonCrossingTrade::parse(&input[..44]).unwrap(),
+            header: MessageHeader::parse(&input[..10]),
+            shares: BigEndian::read_u32(&input[10..18]),
+            stock: input[18..26].try_into().unwrap(),
+            cross_price: BigEndian::read_u32(&input[26..30]),
+            match_number: BigEndian::read_u64(&input[30..38]),
             cross_type: {
-                match input[44] {
+                match input[38] {
                     b'O' => CrossType::OpeningCross,
                     b'C' => CrossType::ClosingCross,
                     b'H' => CrossType::IPOCrossOrHaltedSecurity,
                     b'I' => CrossType::IntradayOrPostCloseCross,
                     _ => Err(ParseError::InvalidCrossType {
-                        invalid_byte: input[44],
+                        invalid_byte: input[38],
                     })?,
                 }
             },

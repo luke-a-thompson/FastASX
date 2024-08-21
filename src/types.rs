@@ -10,6 +10,9 @@ pub enum ParseError {
     InvalidBuySellType { invalid_byte: u8 },
     InvalidCrossType { invalid_byte: u8 },
 
+    //System Messages
+    InvalidSystemEventCode { invalid_byte: u8 },
+
     // Stock Messages
     InvalidMarketCategory { invalid_byte: u8 },
     InvalidFinancialStatusIndicator { invalid_byte: u8 },
@@ -35,11 +38,27 @@ impl fmt::Display for ParseError {
                 "Failed to parse message, slice may be incomplete. Expected {} bytes.",
                 expected
             ),
+            ParseError::InvalidSystemEventCode { invalid_byte } => {
+                write!(
+                    f,
+                    "Invalid SystemEventCode encountered: {}.",
+                    invalid_byte as char
+                )
+            }
+
             ParseError::InvalidBuySellType { invalid_byte } => {
-                write!(f, "Invalid BuySellType encountered: {}.", invalid_byte)
+                write!(
+                    f,
+                    "Invalid BuySellType encountered: {}.",
+                    invalid_byte as char
+                )
             }
             ParseError::InvalidCrossType { invalid_byte } => {
-                write!(f, "Invalid CrossType encountered: {}.", invalid_byte)
+                write!(
+                    f,
+                    "Invalid CrossType encountered: {}.",
+                    invalid_byte as char
+                )
             }
 
             // Stock Messages

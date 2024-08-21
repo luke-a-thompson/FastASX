@@ -19,8 +19,8 @@ pub struct NetOrderImbalanceIndicator {
 
 impl Parse for NetOrderImbalanceIndicator {
     fn parse(input: &[u8]) -> Result<Self, ParseError> {
-        if input.len() != 50 {
-            return Err(ParseError::IncompleteMessage { expected: 50 });
+        if input.len() != 49 {
+            return Err(ParseError::IncompleteMessage { expected: 49 });
         }
 
         Ok(NetOrderImbalanceIndicator {
@@ -52,7 +52,6 @@ impl Parse for NetOrderImbalanceIndicator {
             price_variation_indicator: {
                 match input[48] {
                     b'L' => 'L',
-                    b'0' => '0',
                     b'1' => '1',
                     b'2' => '2',
                     b'3' => '3',
@@ -62,7 +61,11 @@ impl Parse for NetOrderImbalanceIndicator {
                     b'7' => '7',
                     b'8' => '8',
                     b'9' => '9',
-                    _ => panic!("Invalid price_variation_indicator"),
+                    b'A' => 'A',
+                    b'B' => 'B',
+                    b'C' => 'C',
+                    b' ' => ' ',
+                    _ => panic!("Invalid price_variation_indicator: {}", input[48] as char),
                 }
             },
         })

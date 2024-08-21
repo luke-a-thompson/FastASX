@@ -81,8 +81,8 @@ pub struct OrderDelete {
 
 impl Parse for OrderDelete {
     fn parse(input: &[u8]) -> Result<Self, ParseError> {
-        if input.len() != 19 {
-            return Err(ParseError::IncompleteMessage { expected: 19 });
+        if input.len() != 18 {
+            return Err(ParseError::IncompleteMessage { expected: 18 });
         }
 
         Ok(OrderDelete {
@@ -103,7 +103,7 @@ pub struct OrderReplace {
 
 impl Parse for OrderReplace {
     fn parse(input: &[u8]) -> Result<Self, ParseError> {
-        if input.len() != 35 {
+        if input.len() != 34 {
             return Err(ParseError::IncompleteMessage { expected: 35 });
         }
 

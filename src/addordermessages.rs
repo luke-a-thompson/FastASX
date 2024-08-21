@@ -26,7 +26,7 @@ impl Parse for AddOrder {
                 match input[18] {
                     b'B' => BuySellIndicator::Buy,
                     b'S' => BuySellIndicator::Sell,
-                    _ => panic!("Invalid BuySellIndicator"),
+                    _ => panic!("Invalid BuySellIndicator {:?}", input[18] as char),
                 }
             },
             shares: BigEndian::read_u32(&input[19..23]),

@@ -24,7 +24,11 @@ impl Parse for SystemEventMessage {
                     b'M' => SystemEventCode::EndOfMarketHours,
                     b'E' => SystemEventCode::EndOfSystemHours,
                     b'C' => SystemEventCode::EndOfMessages,
-                    _ => panic!("Invalid SystemEventCode"),
+                    _ => {
+                        return Err(ParseError::InvalidSystemEventCode {
+                            invalid_byte: input[10],
+                        })
+                    }
                 }
             }, // We only read up to index 10, 1 less because of match. max spec offset-1
         })

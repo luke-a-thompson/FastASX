@@ -1,7 +1,12 @@
 use crate::enums::CrossType;
 use crate::messageheader::MessageHeader;
-use crate::types::{Parse, ParseError, Stock};
+use crate::types::{BinaryMessageLength, Parse, ParseError, Stock};
 use byteorder::{BigEndian, ByteOrder};
+
+#[cfg(test)]
+use crate::types::{EnumTestHelpers, GenerateBinaryExample};
+#[cfg(test)]
+use fastrand::Rng;
 
 #[derive(Debug, PartialEq)]
 pub struct NonCrossingTrade {
@@ -16,8 +21,10 @@ pub struct NonCrossingTrade {
 
 impl Parse for NonCrossingTrade {
     fn parse(input: &[u8]) -> Result<Self, ParseError> {
-        if input.len() != 43 {
-            return Err(ParseError::IncompleteMessage { expected: 43 });
+        if input.len() != Self::LENGTH {
+            return Err(ParseError::IncompleteMessage {
+                expected: Self::LENGTH,
+            });
         }
 
         Ok(NonCrossingTrade {
@@ -39,10 +46,40 @@ impl Parse for NonCrossingTrade {
     }
 }
 
+impl BinaryMessageLength for NonCrossingTrade {
+    const LENGTH: usize = 43;
+}
+
+#[cfg(test)]
+impl GenerateBinaryExample<{ Self::LENGTH }> for NonCrossingTrade {
+    fn generate_example_message() -> [u8; Self::LENGTH] {
+        let mut rng = Rng::new();
+
+        let header = MessageHeader::generate_example_message();
+        let order_reference_number = rng.u64(..).to_be_bytes();
+        let buy_sell_indicator = b'B';
+        let shares = rng.u32(..).to_be_bytes();
+        let stock = Stock::generate_example_message();
+        let price = rng.u32(..).to_be_bytes();
+        let match_number = rng.u64(..).to_be_bytes();
+
+        let mut message = [0; Self::LENGTH];
+        message[..10].copy_from_slice(&header);
+        message[10..18].copy_from_slice(&order_reference_number);
+        message[18] = buy_sell_indicator;
+        message[19..23].copy_from_slice(&shares);
+        message[23..31].copy_from_slice(&stock);
+        message[31..35].copy_from_slice(&price);
+        message[35..43].copy_from_slice(&match_number);
+
+        message
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub struct CrossingTrade {
     header: MessageHeader,
-    shares: u32,
+    shares: u64, // 64 for crossing trades, 32 for non-crossing trades
     stock: Stock,
     cross_price: u32,
     match_number: u64,
@@ -51,13 +88,15 @@ pub struct CrossingTrade {
 
 impl Parse for CrossingTrade {
     fn parse(input: &[u8]) -> Result<Self, ParseError> {
-        if input.len() != 39 {
-            return Err(ParseError::IncompleteMessage { expected: 39 });
+        if input.len() != Self::LENGTH {
+            return Err(ParseError::IncompleteMessage {
+                expected: Self::LENGTH,
+            });
         }
 
         Ok(CrossingTrade {
             header: MessageHeader::parse(&input[..10]),
-            shares: BigEndian::read_u32(&input[10..18]),
+            shares: BigEndian::read_u64(&input[10..18]),
             stock: input[18..26].try_into().unwrap(),
             cross_price: BigEndian::read_u32(&input[26..30]),
             match_number: BigEndian::read_u64(&input[30..38]),
@@ -76,6 +115,34 @@ impl Parse for CrossingTrade {
     }
 }
 
+impl BinaryMessageLength for CrossingTrade {
+    const LENGTH: usize = 39;
+}
+
+#[cfg(test)]
+impl GenerateBinaryExample<{ Self::LENGTH }> for CrossingTrade {
+    fn generate_example_message() -> [u8; Self::LENGTH] {
+        let mut rng = Rng::new();
+
+        let header = MessageHeader::generate_example_message();
+        let shares = rng.u64(..).to_be_bytes();
+        let stock = Stock::generate_example_message();
+        let cross_price = rng.u32(..).to_be_bytes();
+        let match_number = rng.u64(..).to_be_bytes();
+        let cross_type = CrossType::generate_example_code();
+
+        let mut message = [0; Self::LENGTH];
+        message[..10].copy_from_slice(&header);
+        message[10..18].copy_from_slice(&shares);
+        message[18..26].copy_from_slice(&stock);
+        message[26..30].copy_from_slice(&cross_price);
+        message[30..38].copy_from_slice(&match_number);
+        message[38] = cross_type;
+
+        message
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub struct BrokenTrade {
     header: MessageHeader,
@@ -84,13 +151,35 @@ pub struct BrokenTrade {
 
 impl Parse for BrokenTrade {
     fn parse(input: &[u8]) -> Result<Self, ParseError> {
-        if input.len() != 18 {
-            return Err(ParseError::IncompleteMessage { expected: 18 });
+        if input.len() != Self::LENGTH {
+            return Err(ParseError::IncompleteMessage {
+                expected: Self::LENGTH,
+            });
         }
 
         Ok(BrokenTrade {
             header: MessageHeader::parse(&input[..10]),
             match_number: BigEndian::read_u64(&input[10..18]),
         })
+    }
+}
+
+impl BinaryMessageLength for BrokenTrade {
+    const LENGTH: usize = 18;
+}
+
+#[cfg(test)]
+impl GenerateBinaryExample<{ Self::LENGTH }> for BrokenTrade {
+    fn generate_example_message() -> [u8; Self::LENGTH] {
+        let mut rng = Rng::new();
+
+        let header = MessageHeader::generate_example_message();
+        let match_number = rng.u64(..).to_be_bytes();
+
+        let mut message = [0; Self::LENGTH];
+        message[..10].copy_from_slice(&header);
+        message[10..18].copy_from_slice(&match_number);
+
+        message
     }
 }

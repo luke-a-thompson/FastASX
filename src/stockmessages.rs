@@ -3,19 +3,20 @@ use crate::enums::{
     MWCBLevel, MarketCategory, MarketMakerMode, MarketParticipantState, RegSHOAction,
     ShortSaleThresholdIndicator, TradingReasonCodes, TradingState,
 };
-use crate::helpers::{byte_to_bool, byte_to_bool_space, u8s_to_ticker};
+use crate::helpers::{byte_to_bool, byte_to_bool_space};
 use crate::messageheader::MessageHeader;
-use crate::types::{BinaryMessageLength, EnumTestHelpers, Parse, ParseError, Stock};
+use crate::types::{BinaryMessageLength, Parse, ParseError, Stock};
 use byteorder::{BigEndian, ByteOrder};
 
-use crate::types::GenerateBinaryExample;
+#[cfg(test)]
+use crate::types::{EnumTestHelpers, GenerateBinaryExample};
 #[cfg(test)]
 use fastrand::Rng;
 
 #[derive(Debug, PartialEq)]
 pub struct StockDirectory {
     header: MessageHeader,
-    stock: String,
+    stock: Stock,
     market_category: MarketCategory,
     financial_status_indicator: FinancialStatusIndicator,
     round_lot_size: u32,
@@ -41,7 +42,7 @@ impl Parse for StockDirectory {
 
         Ok(StockDirectory {
             header: MessageHeader::parse(&input[..10]),
-            stock: u8s_to_ticker(&input[10..18]),
+            stock: input[10..18].try_into().unwrap(),
             market_category: MarketCategory::try_from(input[18])?,
             financial_status_indicator: FinancialStatusIndicator::try_from(input[19])?,
             round_lot_size: BigEndian::read_u32(&input[20..24]),
@@ -109,7 +110,7 @@ impl GenerateBinaryExample<{ Self::LENGTH }> for StockDirectory {
 #[derive(Debug, PartialEq)]
 pub struct StockTradingAction {
     header: MessageHeader,
-    stock: u64,
+    stock: Stock,
     trading_state: TradingState,
     reserved: u8,
     reason: TradingReasonCodes,
@@ -125,7 +126,7 @@ impl Parse for StockTradingAction {
 
         Ok(StockTradingAction {
             header: MessageHeader::parse(&input[..10]),
-            stock: BigEndian::read_u64(&input[10..18]),
+            stock: input[10..18].try_into().unwrap(),
             trading_state: TradingState::try_from(input[18])?,
             reserved: input[19],
             reason: TradingReasonCodes::try_from(&input[19..23])?,
@@ -358,7 +359,7 @@ impl GenerateBinaryExample<{ Self::LENGTH }> for MWCBStatus {
 #[derive(Debug, PartialEq)]
 pub struct IPOQuotingPeriodUpdate {
     header: MessageHeader,
-    stock: u64,
+    stock: Stock,
     ipo_quotation_release_time: u32,
     ipo_quotation_release_qualifier: IPOReleaseQualifier,
     ipo_price: u32,
@@ -374,7 +375,7 @@ impl Parse for IPOQuotingPeriodUpdate {
 
         Ok(IPOQuotingPeriodUpdate {
             header: MessageHeader::parse(&input[..10]),
-            stock: BigEndian::read_u64(&input[10..18]),
+            stock: input[10..18].try_into().unwrap(),
             ipo_quotation_release_time: BigEndian::read_u32(&input[18..22]),
             ipo_quotation_release_qualifier: IPOReleaseQualifier::try_from(input[22])?,
             ipo_price: BigEndian::read_u32(&input[23..27]),

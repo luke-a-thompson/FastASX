@@ -10,12 +10,10 @@ ringbuf = "0.4.1"
 thiserror = "1.0.63"
 
 [dev-dependencies]
-# divan = "0.1.14"
 fastrand = "2.1.0"
 
-[build]
-rustflags = ["-C", "target-cpu=native"]
-
+# [build]
+# rustflags = ["-C", "target-cpu=native"]
 
 [profile.release]
 opt-level = 3

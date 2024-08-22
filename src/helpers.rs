@@ -17,13 +17,14 @@ pub fn byte_to_bool_space(byte: u8) -> BoolOrUnavailable {
     }
 }
 
-pub fn u8s_to_ticker(input: &[u8]) -> String {
-    let mut ticker = String::new();
-    for byte in input {
-        if *byte == 0 {
-            break;
-        }
-        ticker.push(*byte as char);
-    }
-    ticker
-}
+// Was too slow
+// pub fn u8s_to_ticker(input: &[u8]) -> String {
+//     let mut ticker = String::new();
+//     for byte in input {
+//         if *byte == 0 {
+//             break;
+//         }
+//         ticker.push(*byte as char);
+//     }
+//     ticker
+// }

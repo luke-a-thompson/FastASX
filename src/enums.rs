@@ -1,13 +1,17 @@
+use crate::types::ParseError;
+use crate::{
+    addordermessages, modifyordermessages, noiimessages, stockmessages, systemmessages,
+    trademessages,
+};
+
+#[cfg(test)]
+use crate::types::EnumTestHelpers;
+
 #[derive(Debug, PartialEq)]
 pub enum BoolOrUnavailable {
     Bool(bool),
     Str(String),
 }
-use crate::types::{EnumTestHelpers, ParseError};
-use crate::{
-    addordermessages, modifyordermessages, noiimessages, stockmessages, systemmessages,
-    trademessages,
-};
 
 #[derive(Debug, PartialEq)]
 pub enum MessageTypes {
@@ -698,7 +702,7 @@ impl TryFrom<u8> for CrossType {
 
 #[cfg(test)]
 impl EnumTestHelpers<4> for CrossType {
-    const VALID_CODES: [u8; 4] = [b'O', b'C', b'H', b'i'];
+    const VALID_CODES: [u8; 4] = [b'O', b'C', b'H', b'I'];
 
     fn generate_example_code() -> u8 {
         let i = fastrand::usize(..Self::VALID_CODES.len());

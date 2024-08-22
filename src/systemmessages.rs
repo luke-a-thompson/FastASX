@@ -1,8 +1,9 @@
 use crate::enums::SystemEventCode;
 use crate::messageheader::MessageHeader;
-use crate::types::{
-    BinaryMessageLength, EnumTestHelpers, GenerateBinaryExample, Parse, ParseError,
-};
+use crate::types::{BinaryMessageLength, Parse, ParseError};
+
+#[cfg(test)]
+use crate::types::{EnumTestHelpers, GenerateBinaryExample};
 
 #[derive(Debug, PartialEq)]
 pub struct SystemEventMessage {

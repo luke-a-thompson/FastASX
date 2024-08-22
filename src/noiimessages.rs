@@ -1,7 +1,12 @@
 use crate::enums::{CrossType, ImbalanceDirection};
 use crate::messageheader::MessageHeader;
-use crate::types::{Parse, ParseError};
+use crate::types::{BinaryMessageLength, Parse, ParseError, Stock};
 use byteorder::{BigEndian, ByteOrder};
+
+#[cfg(test)]
+use crate::types::{EnumTestHelpers, GenerateBinaryExample};
+#[cfg(test)]
+use fastrand::Rng;
 
 #[derive(Debug, PartialEq)]
 pub struct NetOrderImbalanceIndicator {
@@ -9,7 +14,7 @@ pub struct NetOrderImbalanceIndicator {
     paired_shares: u64,
     imbalance_shares: u64,
     imbalance_direction: ImbalanceDirection,
-    stock: [u8; 8],
+    stock: Stock,
     far_price: u32,
     near_price: u32,
     current_reference_price: u32,
@@ -56,11 +61,47 @@ impl Parse for NetOrderImbalanceIndicator {
     }
 }
 
+impl BinaryMessageLength for NetOrderImbalanceIndicator {
+    const LENGTH: usize = 49;
+}
+
+#[cfg(test)]
+impl GenerateBinaryExample<{ Self::LENGTH }> for NetOrderImbalanceIndicator {
+    fn generate_example_message() -> [u8; Self::LENGTH] {
+        let mut rng = Rng::new();
+
+        let header = MessageHeader::generate_example_message();
+        let paired_shares = rng.u64(..).to_be_bytes();
+        let imbalance_shares = rng.u64(..).to_be_bytes();
+        let imbalance_direction = ImbalanceDirection::generate_example_code();
+        let stock = Stock::generate_example_message();
+        let far_price = rng.u32(..).to_be_bytes();
+        let near_price = rng.u32(..).to_be_bytes();
+        let current_reference_price = rng.u32(..).to_be_bytes();
+        let cross_type = CrossType::generate_example_code();
+        let price_variation_indicator = b'C';
+
+        let mut message = [0; Self::LENGTH];
+        message[..10].copy_from_slice(&header);
+        message[10..18].copy_from_slice(&paired_shares);
+        message[18..26].copy_from_slice(&imbalance_shares);
+        message[26] = imbalance_direction;
+        message[27..35].copy_from_slice(&stock);
+        message[35..39].copy_from_slice(&far_price);
+        message[39..43].copy_from_slice(&near_price);
+        message[43..47].copy_from_slice(&current_reference_price);
+        message[47] = cross_type;
+        message[48] = price_variation_indicator;
+
+        message
+    }
+}
+
 // Deprecated?
 #[derive(Debug, PartialEq)]
 pub struct RetailPriceImprovementIndicator {
     header: MessageHeader,
-    stock: [u8; 8],
+    stock: Stock,
     interest_flag: char,
 }
 

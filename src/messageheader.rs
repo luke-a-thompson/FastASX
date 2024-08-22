@@ -1,6 +1,9 @@
 use byteorder::{BigEndian, ByteOrder};
 
-use crate::types::{BinaryMessageLength, GenerateBinaryExample};
+use crate::types::BinaryMessageLength;
+
+#[cfg(test)]
+use crate::types::GenerateBinaryExample;
 
 #[cfg(test)]
 use fastrand::Rng;

@@ -3,6 +3,12 @@ use thiserror::Error;
 pub type Stock = [u8; 8];
 pub type MPID = [u8; 4];
 
+impl GenerateBinaryExample<8> for Stock {
+    fn generate_example_message() -> [u8; 8] {
+        [b'T', b'E', b'S', b'T', b' ', b' ', b' ', b' ']
+    }
+}
+
 #[derive(Debug, Error)]
 pub enum ParseError {
     #[error("Failed to parse message, slice may be incomplete. Expected {expected} bytes.")]

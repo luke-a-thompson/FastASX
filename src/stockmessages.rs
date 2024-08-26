@@ -1,5 +1,5 @@
 use crate::enums::{
-    BoolOrUnavailable, FinancialStatusIndicator, IPOReleaseQualifier, IssueClassificationValues,
+    BoolOrUnavailable, FinancialStatusIndicator, IPOReleaseQualifier, IssueClassificationCodes,
     MWCBLevel, MarketCategory, MarketMakerMode, MarketParticipantState, RegSHOAction,
     ShortSaleThresholdIndicator, TradingReasonCodes, TradingState,
 };
@@ -21,7 +21,7 @@ pub struct StockDirectory {
     financial_status_indicator: FinancialStatusIndicator,
     round_lot_size: u32,
     round_lots_only: bool,
-    issue_classification: IssueClassificationValues,
+    issue_classification: IssueClassificationCodes,
     issue_sub_type: u16,
     authenticity: char,
     short_sale_threshold_indicator: ShortSaleThresholdIndicator,
@@ -47,7 +47,7 @@ impl Parse for StockDirectory {
             financial_status_indicator: FinancialStatusIndicator::try_from(input[19])?,
             round_lot_size: BigEndian::read_u32(&input[20..24]),
             round_lots_only: byte_to_bool(input[24]),
-            issue_classification: IssueClassificationValues::try_from(input[25])?,
+            issue_classification: IssueClassificationCodes::try_from(input[25])?,
             issue_sub_type: BigEndian::read_u16(&input[26..28]),
             authenticity: input[28] as char,
             short_sale_threshold_indicator: ShortSaleThresholdIndicator::try_from(input[29])?,
@@ -75,7 +75,7 @@ impl GenerateBinaryExample<{ Self::LENGTH }> for StockDirectory {
         let financial_status_indicator = FinancialStatusIndicator::generate_example_code();
         let round_lot_size = rng.u32(..).to_be_bytes();
         let round_lots_only = b'Y';
-        let issue_classification = IssueClassificationValues::generate_example_code();
+        let issue_classification = IssueClassificationCodes::generate_example_code();
         let issue_sub_type = rng.u16(..).to_be_bytes();
         let authenticity = b'P';
         let short_sale_threshold_indicator = ShortSaleThresholdIndicator::generate_example_code();

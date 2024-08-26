@@ -1,5 +1,3 @@
-#![feature(test)]
-
 use addordermessages::{AddOrder, AddOrderMPID};
 use modifyordermessages::{
     OrderCancel, OrderDelete, OrderExecuted, OrderExecutedWithPrice, OrderReplace,
@@ -10,29 +8,46 @@ use stockmessages::{
     RegSHOShortSalePriceTestRestriction, StockDirectory, StockTradingAction,
 };
 use trademessages::{BrokenTrade, CrossingTrade, NonCrossingTrade};
-use types::GenerateBinaryExample;
+use types::{EnumTestHelpers, GenerateBinaryExample};
 
 use super::*;
 
 #[bench]
 fn bench_byte_to_bool(b: &mut test::Bencher) {
-    let byte;
-
-    if fastrand::bool() {
-        byte = b'Y';
-    } else {
-        byte = b'N';
-    }
+    let valid_bytes = [b'Y', b'N'];
+    let byte = valid_bytes[fastrand::usize(..valid_bytes.len())];
 
     b.iter(|| helpers::byte_to_bool(byte));
 }
 
+// Initial implentation was very slow (8ns).
+// Making the string static brings it down to 0.22ns!.
 #[bench]
 fn bench_byte_to_bool_space(b: &mut test::Bencher) {
     let valid_bytes = [b'Y', b'N', b' '];
     let byte = valid_bytes[fastrand::usize(..valid_bytes.len())];
 
     b.iter(|| helpers::byte_to_bool_space(byte));
+}
+
+#[bench]
+fn bench_issue_classification_values(b: &mut test::Bencher) {
+    let values = enums::IssueClassificationCodes::generate_example_code();
+    b.iter(|| {
+        let parsed = enums::IssueClassificationCodes::try_from(values);
+        assert!(
+            parsed.is_ok(),
+            "Parsing the issue classification code failed"
+        );
+    });
+}
+
+#[bench]
+fn bench_stock_parsing(b: &mut test::Bencher) {
+    let example_msg = types::Stock::generate_example_message();
+    b.iter(|| {
+        let _parsed: types::Stock = example_msg.try_into().unwrap();
+    });
 }
 
 #[bench]

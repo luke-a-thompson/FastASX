@@ -1,3 +1,5 @@
+cargo-features = ["profile-rustflags"]
+
 [package]
 name = "fastasx"
 version = "0.1.1"
@@ -18,6 +20,10 @@ fastrand = "2.1.0"
 [profile.release]
 opt-level = 3
 lto = "fat"
-codegen-units = 1
+codegen-units = 1  # ~Doubles performance for some message parses
 panic = "abort"
 debug = false
+
+[profile.release.build-override]
+rustflags = ["-C", "target-cpu=native"]  # No big difference in performance
+

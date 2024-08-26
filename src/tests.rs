@@ -29,7 +29,7 @@ fn test_byte_to_bool_space() {
     );
     assert_eq!(
         helpers::byte_to_bool_space(b' '),
-        enums::BoolOrUnavailable::Str("Not Available".to_string())
+        enums::BoolOrUnavailable::Str("Not Available")
     );
 }
 

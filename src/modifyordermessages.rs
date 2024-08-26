@@ -3,7 +3,7 @@ use crate::{helpers::byte_to_bool, messageheader::MessageHeader};
 use byteorder::{BigEndian, ByteOrder};
 
 #[cfg(test)]
-use crate::types::{EnumTestHelpers, GenerateBinaryExample};
+use crate::types::GenerateBinaryExample;
 #[cfg(test)]
 use fastrand::Rng;
 

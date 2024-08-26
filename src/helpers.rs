@@ -12,7 +12,7 @@ pub fn byte_to_bool_space(byte: u8) -> BoolOrUnavailable {
     match byte {
         b'Y' => BoolOrUnavailable::Bool(true),
         b'N' => BoolOrUnavailable::Bool(false),
-        b' ' => BoolOrUnavailable::Str("Not Available".to_string()),
+        b' ' => BoolOrUnavailable::Str("Not Available"),
         _ => panic!("Invalid input: expected 'Y' or 'N', got '{}'", byte as char),
     }
 }

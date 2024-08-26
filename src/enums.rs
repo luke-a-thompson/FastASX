@@ -10,7 +10,7 @@ use crate::types::EnumTestHelpers;
 #[derive(Debug, PartialEq)]
 pub enum BoolOrUnavailable {
     Bool(bool),
-    Str(String),
+    Str(&'static str),
 }
 
 #[derive(Debug, PartialEq)]
@@ -452,7 +452,7 @@ pub enum TradingResumptionReasonCodes {
 }
 
 #[derive(Debug, PartialEq)]
-pub enum IssueClassificationValues {
+pub enum IssueClassificationCodes {
     AmericanDepositaryShare,
     Bond,
     CommonStock,
@@ -471,27 +471,27 @@ pub enum IssueClassificationValues {
     Warrant,
 }
 
-impl TryFrom<u8> for IssueClassificationValues {
+impl TryFrom<u8> for IssueClassificationCodes {
     type Error = ParseError;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
-            b'A' => Ok(IssueClassificationValues::AmericanDepositaryShare),
-            b'B' => Ok(IssueClassificationValues::Bond),
-            b'C' => Ok(IssueClassificationValues::CommonStock),
-            b'F' => Ok(IssueClassificationValues::DepositoryReceipt),
-            b'I' => Ok(IssueClassificationValues::UnregisteredSecurity), // SEC Rule 144a
-            b'L' => Ok(IssueClassificationValues::LimitedPartnership),
-            b'N' => Ok(IssueClassificationValues::Notes),
-            b'O' => Ok(IssueClassificationValues::OrdinaryShare),
-            b'P' => Ok(IssueClassificationValues::PreferredStock),
-            b'Q' => Ok(IssueClassificationValues::OtherSecurity),
-            b'R' => Ok(IssueClassificationValues::Right),
-            b'S' => Ok(IssueClassificationValues::ShareOfBeneficialInterest),
-            b'T' => Ok(IssueClassificationValues::ConvertibleDebenture),
-            b'U' => Ok(IssueClassificationValues::Unit),
-            b'V' => Ok(IssueClassificationValues::UnitBenifInt),
-            b'W' => Ok(IssueClassificationValues::Warrant),
+            b'A' => Ok(IssueClassificationCodes::AmericanDepositaryShare),
+            b'B' => Ok(IssueClassificationCodes::Bond),
+            b'C' => Ok(IssueClassificationCodes::CommonStock),
+            b'F' => Ok(IssueClassificationCodes::DepositoryReceipt),
+            b'I' => Ok(IssueClassificationCodes::UnregisteredSecurity), // SEC Rule 144a
+            b'L' => Ok(IssueClassificationCodes::LimitedPartnership),
+            b'N' => Ok(IssueClassificationCodes::Notes),
+            b'O' => Ok(IssueClassificationCodes::OrdinaryShare),
+            b'P' => Ok(IssueClassificationCodes::PreferredStock),
+            b'Q' => Ok(IssueClassificationCodes::OtherSecurity),
+            b'R' => Ok(IssueClassificationCodes::Right),
+            b'S' => Ok(IssueClassificationCodes::ShareOfBeneficialInterest),
+            b'T' => Ok(IssueClassificationCodes::ConvertibleDebenture),
+            b'U' => Ok(IssueClassificationCodes::Unit),
+            b'V' => Ok(IssueClassificationCodes::UnitBenifInt),
+            b'W' => Ok(IssueClassificationCodes::Warrant),
             _ => Err(ParseError::InvalidIssueClassificationCode {
                 invalid_byte: value,
             }),
@@ -500,7 +500,7 @@ impl TryFrom<u8> for IssueClassificationValues {
 }
 
 #[cfg(test)]
-impl EnumTestHelpers<16> for IssueClassificationValues {
+impl EnumTestHelpers<16> for IssueClassificationCodes {
     const VALID_CODES: [u8; 16] = [
         b'A', b'B', b'C', b'F', b'I', b'L', b'N', b'O', b'P', b'Q', b'R', b'S', b'T', b'U', b'V',
         b'W',
@@ -742,4 +742,9 @@ impl EnumTestHelpers<4> for ImbalanceDirection {
         let i = fastrand::usize(..Self::VALID_CODES.len());
         Self::VALID_CODES[i]
     }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum PriceVariationIndicator {
+    
 }

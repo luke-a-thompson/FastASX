@@ -1,6 +1,6 @@
 use crate::enums::CrossType;
 use crate::messageheader::MessageHeader;
-use crate::types::{BinaryMessageLength, Parse, ParseError, Stock};
+use crate::types::{BinaryMessageLength, MessageHeaderType, Parse, ParseError, Stock};
 use byteorder::{BigEndian, ByteOrder};
 
 #[cfg(test)]
@@ -48,6 +48,10 @@ impl Parse for NonCrossingTrade {
 
 impl BinaryMessageLength for NonCrossingTrade {
     const LENGTH: usize = 43;
+}
+
+impl MessageHeaderType for NonCrossingTrade {
+    const MESSAGE_TYPE: u8 = b'P';
 }
 
 #[cfg(test)]
@@ -119,6 +123,10 @@ impl BinaryMessageLength for CrossingTrade {
     const LENGTH: usize = 39;
 }
 
+impl MessageHeaderType for CrossingTrade {
+    const MESSAGE_TYPE: u8 = b'Q';
+}
+
 #[cfg(test)]
 impl GenerateBinaryExample<{ Self::LENGTH }> for CrossingTrade {
     fn generate_example_message() -> [u8; Self::LENGTH] {
@@ -166,6 +174,10 @@ impl Parse for BrokenTrade {
 
 impl BinaryMessageLength for BrokenTrade {
     const LENGTH: usize = 18;
+}
+
+impl MessageHeaderType for BrokenTrade {
+    const MESSAGE_TYPE: u8 = b'B';
 }
 
 #[cfg(test)]

@@ -53,8 +53,9 @@ fn bench_stock_parsing(b: &mut test::Bencher) {
 #[bench]
 fn bench_system_event_message(b: &mut test::Bencher) {
     let example_msg = SystemEventMessage::generate_example_message();
+    let mut parsed = SystemEventMessage::parse(&example_msg);
     b.iter(|| {
-        let parsed = SystemEventMessage::parse(&example_msg);
+        parsed = SystemEventMessage::parse(&example_msg);
         assert!(parsed.is_ok(), "Parsing the system event message failed");
     });
 }

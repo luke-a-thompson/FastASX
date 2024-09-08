@@ -12,25 +12,27 @@ use super::*;
 
 // Helpers
 #[test]
-fn test_byte_to_bool() {
-    assert_eq!(helpers::byte_to_bool(b'Y'), true);
-    assert_eq!(helpers::byte_to_bool(b'N'), false);
+fn test_byte_to_bool() -> Result<(), ParseError> {
+    assert_eq!(helpers::byte_to_bool(b'Y')?, true);
+    assert_eq!(helpers::byte_to_bool(b'N')?, false);
+    Ok(())
 }
 
 #[test]
-fn test_byte_to_bool_space() {
+fn test_byte_to_bool_space() -> Result<(), ParseError> {
     assert_eq!(
-        helpers::byte_to_bool_space(b'Y'),
+        helpers::byte_to_bool_space(b'Y')?,
         enums::BoolOrUnavailable::Bool(true)
     );
     assert_eq!(
-        helpers::byte_to_bool_space(b'N'),
+        helpers::byte_to_bool_space(b'N')?,
         enums::BoolOrUnavailable::Bool(false)
     );
     assert_eq!(
-        helpers::byte_to_bool_space(b' '),
+        helpers::byte_to_bool_space(b' ')?,
         enums::BoolOrUnavailable::Str("Not Available")
     );
+    Ok(())
 }
 
 // System Events

@@ -1,6 +1,6 @@
 use crate::enums::SystemEventCode;
 use crate::messageheader::MessageHeader;
-use crate::types::{BinaryMessageLength, Parse, ParseError};
+use crate::types::{BinaryMessageLength, MessageHeaderType, Parse, ParseError};
 
 #[cfg(test)]
 use crate::types::{EnumTestHelpers, GenerateBinaryExample};
@@ -26,6 +26,10 @@ impl Parse for SystemEventMessage {
 
 impl BinaryMessageLength for SystemEventMessage {
     const LENGTH: usize = 11;
+}
+
+impl MessageHeaderType for SystemEventMessage {
+    const MESSAGE_TYPE: u8 = b'S';
 }
 
 #[cfg(test)]

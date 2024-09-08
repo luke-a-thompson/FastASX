@@ -1,4 +1,4 @@
-use crate::types::{BinaryMessageLength, Parse, ParseError};
+use crate::types::{BinaryMessageLength, MessageHeaderType, Parse, ParseError};
 use crate::{helpers::byte_to_bool, messageheader::MessageHeader};
 use byteorder::{BigEndian, ByteOrder};
 
@@ -34,6 +34,10 @@ impl Parse for OrderExecuted {
 
 impl BinaryMessageLength for OrderExecuted {
     const LENGTH: usize = 30;
+}
+
+impl MessageHeaderType for OrderExecuted {
+    const MESSAGE_TYPE: u8 = b'E';
 }
 
 #[cfg(test)]
@@ -74,7 +78,7 @@ impl Parse for OrderExecutedWithPrice {
         Ok(OrderExecutedWithPrice {
             order_executed_message: OrderExecuted::parse(&input[..30])
                 .expect("Failed to parse OrderExecutedWithPrice: Invalid order_executed header."),
-            printable: byte_to_bool(input[30]),
+            printable: byte_to_bool(input[30])?,
             exec_price: BigEndian::read_u32(&input[31..35]),
         })
     }
@@ -82,6 +86,10 @@ impl Parse for OrderExecutedWithPrice {
 
 impl BinaryMessageLength for OrderExecutedWithPrice {
     const LENGTH: usize = 35;
+}
+
+impl MessageHeaderType for OrderExecutedWithPrice {
+    const MESSAGE_TYPE: u8 = b'C';
 }
 
 #[cfg(test)]
@@ -134,6 +142,10 @@ impl BinaryMessageLength for OrderCancel {
     const LENGTH: usize = 22;
 }
 
+impl MessageHeaderType for OrderCancel {
+    const MESSAGE_TYPE: u8 = b'X';
+}
+
 #[cfg(test)]
 impl GenerateBinaryExample<{ Self::LENGTH }> for OrderCancel {
     fn generate_example_message() -> [u8; Self::LENGTH] {
@@ -175,6 +187,10 @@ impl Parse for OrderDelete {
 
 impl BinaryMessageLength for OrderDelete {
     const LENGTH: usize = 18;
+}
+
+impl MessageHeaderType for OrderDelete {
+    const MESSAGE_TYPE: u8 = b'D';
 }
 
 #[cfg(test)]
@@ -222,6 +238,10 @@ impl Parse for OrderReplace {
 
 impl BinaryMessageLength for OrderReplace {
     const LENGTH: usize = 34;
+}
+
+impl MessageHeaderType for OrderReplace {
+    const MESSAGE_TYPE: u8 = b'U';
 }
 
 #[cfg(test)]

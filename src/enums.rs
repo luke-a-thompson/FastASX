@@ -82,6 +82,7 @@ pub enum MarketCategory {
     NYSE,
     NYSEMKT,
     NYSEArca,
+    InvestorsExchange,
     BATS,
     Unavailable,
 }
@@ -97,6 +98,7 @@ impl TryFrom<u8> for MarketCategory {
             b'N' => Ok(MarketCategory::NYSE),
             b'A' => Ok(MarketCategory::NYSEArca),
             b'P' => Ok(MarketCategory::NYSEMKT),
+            b'V' => Ok(MarketCategory::InvestorsExchange),
             b'Z' => Ok(MarketCategory::BATS),
             b' ' => Ok(MarketCategory::Unavailable),
             _ => Err(ParseError::InvalidMarketCategory {
@@ -628,7 +630,7 @@ impl TryFrom<u8> for IPOReleaseQualifier {
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
             b'A' => Ok(IPOReleaseQualifier::Anticipated),
-            b'P' => Ok(IPOReleaseQualifier::Postponed),
+            b'C' => Ok(IPOReleaseQualifier::Postponed),
             _ => Err(ParseError::InvalidIPOReleaseQualifier {
                 invalid_byte: value,
             }),
@@ -745,6 +747,4 @@ impl EnumTestHelpers<4> for ImbalanceDirection {
 }
 
 #[derive(Debug, PartialEq)]
-pub enum PriceVariationIndicator {
-    
-}
+pub enum PriceVariationIndicator {}

@@ -1,6 +1,6 @@
 use crate::enums::{CrossType, ImbalanceDirection};
 use crate::messageheader::MessageHeader;
-use crate::types::{BinaryMessageLength, Parse, ParseError, Stock};
+use crate::types::{BinaryMessageLength, MessageHeaderType, Parse, ParseError, Stock};
 use byteorder::{BigEndian, ByteOrder};
 
 #[cfg(test)]
@@ -54,7 +54,7 @@ impl Parse for NetOrderImbalanceIndicator {
                     b'B' => 'B',
                     b'C' => 'C',
                     b' ' => ' ',
-                    _ => panic!("Invalid price_variation_indicator: {}", input[48] as char),
+                    b => Err(ParseError::InvalidPriceVariationIndicator { invalid_byte: b })?,
                 }
             },
         })
@@ -63,6 +63,10 @@ impl Parse for NetOrderImbalanceIndicator {
 
 impl BinaryMessageLength for NetOrderImbalanceIndicator {
     const LENGTH: usize = 49;
+}
+
+impl MessageHeaderType for NetOrderImbalanceIndicator {
+    const MESSAGE_TYPE: u8 = b'I';
 }
 
 #[cfg(test)]
@@ -117,4 +121,12 @@ impl Parse for RetailPriceImprovementIndicator {
             interest_flag: input[18] as char,
         })
     }
+}
+
+impl BinaryMessageLength for RetailPriceImprovementIndicator {
+    const LENGTH: usize = 19;
+}
+
+impl MessageHeaderType for RetailPriceImprovementIndicator {
+    const MESSAGE_TYPE: u8 = b'N';
 }

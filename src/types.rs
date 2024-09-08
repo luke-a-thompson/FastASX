@@ -11,6 +11,9 @@ impl GenerateBinaryExample<8> for Stock {
 
 #[derive(Debug, Error)]
 pub enum ParseError {
+    #[error("Invalid byte for boolean expression: {invalid_byte}")]
+    InvalidBooleanByte { invalid_byte: u8 },
+
     #[error("Failed to parse message, slice may be incomplete. Expected {expected} bytes.")]
     IncompleteMessage { expected: usize },
 
@@ -66,10 +69,17 @@ pub enum ParseError {
     // Noii Messages
     #[error("Invalid ImbalanceDirection encountered: {invalid_byte}")]
     InvalidImbalanceDirection { invalid_byte: u8 },
+
+    #[error("Invalid PriceVariationIndicator encountered: {invalid_byte}")]
+    InvalidPriceVariationIndicator { invalid_byte: u8 },
 }
 
 pub trait BinaryMessageLength {
     const LENGTH: usize;
+}
+
+pub trait MessageHeaderType {
+    const MESSAGE_TYPE: u8;
 }
 
 pub trait Parse: Sized {

@@ -5,7 +5,7 @@ use crate::enums::{
 };
 use crate::helpers::{byte_to_bool, byte_to_bool_space};
 use crate::messageheader::MessageHeader;
-use crate::types::{BinaryMessageLength, Parse, ParseError, Stock};
+use crate::types::{BinaryMessageLength, MessageHeaderType, Parse, ParseError, Stock};
 use byteorder::{BigEndian, ByteOrder};
 
 #[cfg(test)]
@@ -46,22 +46,26 @@ impl Parse for StockDirectory {
             market_category: MarketCategory::try_from(input[18])?,
             financial_status_indicator: FinancialStatusIndicator::try_from(input[19])?,
             round_lot_size: BigEndian::read_u32(&input[20..24]),
-            round_lots_only: byte_to_bool(input[24]),
+            round_lots_only: byte_to_bool(input[24])?,
             issue_classification: IssueClassificationCodes::try_from(input[25])?,
             issue_sub_type: BigEndian::read_u16(&input[26..28]),
             authenticity: input[28] as char,
             short_sale_threshold_indicator: ShortSaleThresholdIndicator::try_from(input[29])?,
             ipo_flag: input[30] as char,
             luld_reference_price_tier: input[31] as char,
-            etp_flag: byte_to_bool_space(input[32]),
+            etp_flag: byte_to_bool_space(input[32])?,
             etp_leverage_factor: BigEndian::read_u32(&input[33..37]),
-            inverse_indicator: byte_to_bool(input[37]), // We only read up to index 37 (38 bytes), 1 less because of match. max spec offset-1
+            inverse_indicator: byte_to_bool(input[37])?, // We only read up to index 37 (38 bytes), 1 less because of match. max spec offset-1
         })
     }
 }
 
 impl BinaryMessageLength for StockDirectory {
     const LENGTH: usize = 38;
+}
+
+impl MessageHeaderType for StockDirectory {
+    const MESSAGE_TYPE: u8 = b'R';
 }
 
 #[cfg(test)]
@@ -129,13 +133,17 @@ impl Parse for StockTradingAction {
             stock: input[10..18].try_into().unwrap(),
             trading_state: TradingState::try_from(input[18])?,
             reserved: input[19],
-            reason: TradingReasonCodes::try_from(&input[19..23])?,
+            reason: TradingReasonCodes::try_from(&input[20..24])?,
         })
     }
 }
 
 impl BinaryMessageLength for StockTradingAction {
     const LENGTH: usize = 24;
+}
+
+impl MessageHeaderType for StockTradingAction {
+    const MESSAGE_TYPE: u8 = b'H';
 }
 
 #[cfg(test)]
@@ -155,7 +163,7 @@ impl GenerateBinaryExample<{ Self::LENGTH }> for StockTradingAction {
         message[10..18].copy_from_slice(&stock);
         message[18] = trading_state;
         message[19] = reserved;
-        message[19..23].copy_from_slice(reason);
+        message[20..24].copy_from_slice(reason);
 
         message
     }
@@ -186,6 +194,10 @@ impl Parse for RegSHOShortSalePriceTestRestriction {
 
 impl BinaryMessageLength for RegSHOShortSalePriceTestRestriction {
     const LENGTH: usize = 19;
+}
+
+impl MessageHeaderType for RegSHOShortSalePriceTestRestriction {
+    const MESSAGE_TYPE: u8 = b'Y';
 }
 
 #[cfg(test)]
@@ -229,7 +241,7 @@ impl Parse for MarketParticipantPosition {
             header: MessageHeader::parse(&input[..10]),
             mp_id: BigEndian::read_u32(&input[10..14]),
             stock: input[14..22].try_into().unwrap(),
-            primary_market_maker: byte_to_bool(input[22]),
+            primary_market_maker: byte_to_bool(input[22])?,
             market_maker_mode: MarketMakerMode::try_from(input[23])?,
             market_participant_state: MarketParticipantState::try_from(input[24])?,
         })
@@ -238,6 +250,10 @@ impl Parse for MarketParticipantPosition {
 
 impl BinaryMessageLength for MarketParticipantPosition {
     const LENGTH: usize = 25;
+}
+
+impl MessageHeaderType for MarketParticipantPosition {
+    const MESSAGE_TYPE: u8 = b'L';
 }
 
 #[cfg(test)]
@@ -292,7 +308,11 @@ impl Parse for MWCBDeclineLevel {
 }
 
 impl BinaryMessageLength for MWCBDeclineLevel {
-    const LENGTH: usize = 35;
+    const LENGTH: usize = 34;
+}
+
+impl MessageHeaderType for MWCBDeclineLevel {
+    const MESSAGE_TYPE: u8 = b'V';
 }
 
 #[cfg(test)]
@@ -341,6 +361,10 @@ impl BinaryMessageLength for MWCBStatus {
     const LENGTH: usize = 11;
 }
 
+impl MessageHeaderType for MWCBStatus {
+    const MESSAGE_TYPE: u8 = b'W';
+}
+
 #[cfg(test)]
 impl GenerateBinaryExample<{ Self::LENGTH }> for MWCBStatus {
     fn generate_example_message() -> [u8; Self::LENGTH] {
@@ -385,6 +409,10 @@ impl Parse for IPOQuotingPeriodUpdate {
 
 impl BinaryMessageLength for IPOQuotingPeriodUpdate {
     const LENGTH: usize = 27;
+}
+
+impl MessageHeaderType for IPOQuotingPeriodUpdate {
+    const MESSAGE_TYPE: u8 = b'K';
 }
 
 #[cfg(test)]

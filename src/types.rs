@@ -3,6 +3,7 @@ use thiserror::Error;
 pub type Stock = [u8; 8];
 pub type MPID = [u8; 4];
 
+#[cfg(any(test, feature = "bench"))]
 impl GenerateBinaryExample<8> for Stock {
     fn generate_example_message() -> [u8; 8] {
         [b'T', b'E', b'S', b'T', b' ', b' ', b' ', b' ']

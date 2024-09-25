@@ -2,10 +2,10 @@ use byteorder::{BigEndian, ByteOrder};
 
 use crate::types::BinaryMessageLength;
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 use crate::types::GenerateBinaryExample;
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 use fastrand::Rng;
 
 #[derive(Debug, PartialEq)]
@@ -35,7 +35,7 @@ impl BinaryMessageLength for MessageHeader {
     const LENGTH: usize = 10;
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 impl GenerateBinaryExample<{ Self::LENGTH }> for MessageHeader {
     fn generate_example_message() -> [u8; Self::LENGTH] {
         let mut rng = Rng::new();

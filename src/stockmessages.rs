@@ -8,9 +8,9 @@ use crate::messageheader::MessageHeader;
 use crate::types::{BinaryMessageLength, MessageHeaderType, Parse, ParseError, Stock};
 use byteorder::{BigEndian, ByteOrder};
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 use crate::types::{EnumTestHelpers, GenerateBinaryExample};
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 use fastrand::Rng;
 
 #[derive(Debug, PartialEq)]
@@ -68,7 +68,7 @@ impl MessageHeaderType for StockDirectory {
     const MESSAGE_TYPE: u8 = b'R';
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 impl GenerateBinaryExample<{ Self::LENGTH }> for StockDirectory {
     fn generate_example_message() -> [u8; Self::LENGTH] {
         let mut rng = Rng::new();
@@ -146,7 +146,7 @@ impl MessageHeaderType for StockTradingAction {
     const MESSAGE_TYPE: u8 = b'H';
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 impl GenerateBinaryExample<{ Self::LENGTH }> for StockTradingAction {
     fn generate_example_message() -> [u8; Self::LENGTH] {
         let mut rng = Rng::new();
@@ -200,7 +200,7 @@ impl MessageHeaderType for RegSHOShortSalePriceTestRestriction {
     const MESSAGE_TYPE: u8 = b'Y';
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 impl GenerateBinaryExample<{ Self::LENGTH }> for RegSHOShortSalePriceTestRestriction {
     fn generate_example_message() -> [u8; Self::LENGTH] {
         let mut rng = Rng::new();
@@ -256,7 +256,7 @@ impl MessageHeaderType for MarketParticipantPosition {
     const MESSAGE_TYPE: u8 = b'L';
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 impl GenerateBinaryExample<{ Self::LENGTH }> for MarketParticipantPosition {
     fn generate_example_message() -> [u8; Self::LENGTH] {
         let mut rng = Rng::new();
@@ -315,7 +315,7 @@ impl MessageHeaderType for MWCBDeclineLevel {
     const MESSAGE_TYPE: u8 = b'V';
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 impl GenerateBinaryExample<{ Self::LENGTH }> for MWCBDeclineLevel {
     fn generate_example_message() -> [u8; Self::LENGTH] {
         let mut rng = Rng::new();
@@ -365,7 +365,7 @@ impl MessageHeaderType for MWCBStatus {
     const MESSAGE_TYPE: u8 = b'W';
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 impl GenerateBinaryExample<{ Self::LENGTH }> for MWCBStatus {
     fn generate_example_message() -> [u8; Self::LENGTH] {
         let header = MessageHeader::generate_example_message();
@@ -415,7 +415,7 @@ impl MessageHeaderType for IPOQuotingPeriodUpdate {
     const MESSAGE_TYPE: u8 = b'K';
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 impl GenerateBinaryExample<{ Self::LENGTH }> for IPOQuotingPeriodUpdate {
     fn generate_example_message() -> [u8; Self::LENGTH] {
         let mut rng = Rng::new();

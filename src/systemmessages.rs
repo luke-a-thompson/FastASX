@@ -2,7 +2,7 @@ use crate::enums::SystemEventCode;
 use crate::messageheader::MessageHeader;
 use crate::types::{BinaryMessageLength, MessageHeaderType, Parse, ParseError};
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 use crate::types::{EnumTestHelpers, GenerateBinaryExample};
 
 #[derive(Debug, PartialEq)]
@@ -32,7 +32,7 @@ impl MessageHeaderType for SystemEventMessage {
     const MESSAGE_TYPE: u8 = b'S';
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 impl GenerateBinaryExample<{ SystemEventMessage::LENGTH }> for SystemEventMessage {
     fn generate_example_message() -> [u8; SystemEventMessage::LENGTH] {
         let header = MessageHeader::generate_example_message();

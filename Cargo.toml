@@ -6,13 +6,25 @@ version = "0.1.1"
 edition = "2021"
 authors = ["Luke Thompson <luke-a-thompson@outlook.com>"]
 
+[lib]
+name = "fastasx"
+path = "src/lib.rs"
+
+[[bin]]
+name = "fastasx_bin"
+path = "src/main.rs"
+
+[features]
+bench = []
+
 [dependencies]
 byteorder = "1.5.0"
 ringbuf = "0.4.1"
 thiserror = "1.0.63"
+fastrand = "2.1.0"
 
 [dev-dependencies]
-fastrand = "2.1.0"
+criterion = "0.5.1"
 
 # [build]
 # rustflags = ["-C", "target-cpu=native"]
@@ -20,10 +32,13 @@ fastrand = "2.1.0"
 [profile.release]
 opt-level = 3
 lto = "fat"
-codegen-units = 1  # ~Doubles performance for some message parses
+codegen-units = 1 # ~Doubles performance for some message parses
 panic = "abort"
 debug = false
 
 [profile.release.build-override]
-rustflags = ["-C", "target-cpu=native"]  # No big difference in performance
+rustflags = ["-C", "target-cpu=native"] # No big difference in performance
 
+[[bench]]
+name = "benchmarks"
+harness = false

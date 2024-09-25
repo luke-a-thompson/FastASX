@@ -3,9 +3,9 @@ use crate::messageheader::MessageHeader;
 use crate::types::{BinaryMessageLength, MessageHeaderType, Parse, ParseError, Stock};
 use byteorder::{BigEndian, ByteOrder};
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 use crate::types::{EnumTestHelpers, GenerateBinaryExample};
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 use fastrand::Rng;
 
 #[derive(Debug, PartialEq)]
@@ -54,7 +54,7 @@ impl MessageHeaderType for NonCrossingTrade {
     const MESSAGE_TYPE: u8 = b'P';
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 impl GenerateBinaryExample<{ Self::LENGTH }> for NonCrossingTrade {
     fn generate_example_message() -> [u8; Self::LENGTH] {
         let mut rng = Rng::new();
@@ -127,7 +127,7 @@ impl MessageHeaderType for CrossingTrade {
     const MESSAGE_TYPE: u8 = b'Q';
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 impl GenerateBinaryExample<{ Self::LENGTH }> for CrossingTrade {
     fn generate_example_message() -> [u8; Self::LENGTH] {
         let mut rng = Rng::new();
@@ -180,7 +180,7 @@ impl MessageHeaderType for BrokenTrade {
     const MESSAGE_TYPE: u8 = b'B';
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 impl GenerateBinaryExample<{ Self::LENGTH }> for BrokenTrade {
     fn generate_example_message() -> [u8; Self::LENGTH] {
         let mut rng = Rng::new();

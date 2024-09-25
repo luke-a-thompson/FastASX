@@ -3,9 +3,9 @@ use crate::messageheader::MessageHeader;
 use crate::types::{BinaryMessageLength, MessageHeaderType, Parse, ParseError, Stock};
 use byteorder::{BigEndian, ByteOrder};
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 use crate::types::{EnumTestHelpers, GenerateBinaryExample};
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 use fastrand::Rng;
 
 #[derive(Debug, PartialEq)]
@@ -45,7 +45,7 @@ impl MessageHeaderType for AddOrder {
     const MESSAGE_TYPE: u8 = b'A';
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 impl GenerateBinaryExample<{ Self::LENGTH }> for AddOrder {
     fn generate_example_message() -> [u8; Self::LENGTH] {
         let mut rng = Rng::new();
@@ -100,7 +100,7 @@ impl MessageHeaderType for AddOrderMPID {
     const MESSAGE_TYPE: u8 = b'F';
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 impl GenerateBinaryExample<{ Self::LENGTH }> for AddOrderMPID {
     fn generate_example_message() -> [u8; Self::LENGTH] {
         let mut rng = Rng::new();

@@ -9,13 +9,12 @@ use std::io::{self, Read};
 use std::sync::atomic::AtomicBool;
 use types::{BinaryMessageLength, MessageHeaderType, Parse, ParseError};
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 mod tests;
 
 use systemmessages::*;
 
 pub mod addordermessages;
-pub mod benchmarks;
 pub mod enums;
 pub mod helpers;
 pub mod messageheader;

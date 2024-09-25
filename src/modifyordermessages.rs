@@ -2,9 +2,9 @@ use crate::types::{BinaryMessageLength, MessageHeaderType, Parse, ParseError};
 use crate::{helpers::byte_to_bool, messageheader::MessageHeader};
 use byteorder::{BigEndian, ByteOrder};
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 use crate::types::GenerateBinaryExample;
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 use fastrand::Rng;
 
 #[derive(Debug, PartialEq)]
@@ -40,7 +40,7 @@ impl MessageHeaderType for OrderExecuted {
     const MESSAGE_TYPE: u8 = b'E';
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 impl GenerateBinaryExample<{ Self::LENGTH }> for OrderExecuted {
     fn generate_example_message() -> [u8; Self::LENGTH] {
         let mut rng = Rng::new();
@@ -92,7 +92,7 @@ impl MessageHeaderType for OrderExecutedWithPrice {
     const MESSAGE_TYPE: u8 = b'C';
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 impl GenerateBinaryExample<{ Self::LENGTH }> for OrderExecutedWithPrice {
     fn generate_example_message() -> [u8; Self::LENGTH] {
         let mut rng = Rng::new();
@@ -146,7 +146,7 @@ impl MessageHeaderType for OrderCancel {
     const MESSAGE_TYPE: u8 = b'X';
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 impl GenerateBinaryExample<{ Self::LENGTH }> for OrderCancel {
     fn generate_example_message() -> [u8; Self::LENGTH] {
         let mut rng = Rng::new();
@@ -193,7 +193,7 @@ impl MessageHeaderType for OrderDelete {
     const MESSAGE_TYPE: u8 = b'D';
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 impl GenerateBinaryExample<{ Self::LENGTH }> for OrderDelete {
     fn generate_example_message() -> [u8; Self::LENGTH] {
         let mut rng = Rng::new();
@@ -244,7 +244,7 @@ impl MessageHeaderType for OrderReplace {
     const MESSAGE_TYPE: u8 = b'U';
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 impl GenerateBinaryExample<{ Self::LENGTH }> for OrderReplace {
     fn generate_example_message() -> [u8; Self::LENGTH] {
         let mut rng = Rng::new();

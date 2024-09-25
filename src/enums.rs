@@ -4,7 +4,7 @@ use crate::{
     trademessages,
 };
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 use crate::types::EnumTestHelpers;
 
 #[derive(Debug, PartialEq)]
@@ -64,7 +64,7 @@ impl TryFrom<u8> for SystemEventCode {
     }
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 impl EnumTestHelpers<6> for SystemEventCode {
     const VALID_CODES: [u8; 6] = [b'O', b'S', b'Q', b'M', b'E', b'C'];
 
@@ -108,7 +108,7 @@ impl TryFrom<u8> for MarketCategory {
     }
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 impl EnumTestHelpers<8> for MarketCategory {
     const VALID_CODES: [u8; 8] = [b'Q', b'G', b'S', b'N', b'A', b'P', b'Z', b' '];
 
@@ -138,7 +138,7 @@ impl TryFrom<u8> for Authenticity {
     }
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 impl EnumTestHelpers<2> for Authenticity {
     const VALID_CODES: [u8; 2] = [b'P', b'T'];
 
@@ -170,7 +170,7 @@ impl TryFrom<u8> for ShortSaleThresholdIndicator {
     }
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 impl EnumTestHelpers<3> for ShortSaleThresholdIndicator {
     const VALID_CODES: [u8; 3] = [b'Y', b'N', b' '];
 
@@ -218,7 +218,7 @@ impl TryFrom<u8> for FinancialStatusIndicator {
     }
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 impl EnumTestHelpers<11> for FinancialStatusIndicator {
     const VALID_CODES: [u8; 11] = [
         b'D', b'E', b'Q', b'S', b'G', b'H', b'J', b'K', b'C', b'N', b' ',
@@ -254,7 +254,7 @@ impl TryFrom<u8> for TradingState {
     }
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 impl EnumTestHelpers<4> for TradingState {
     const VALID_CODES: [u8; 4] = [b'H', b'P', b'Q', b'T'];
 
@@ -286,7 +286,7 @@ impl TryFrom<u8> for RegSHOAction {
     }
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 impl EnumTestHelpers<3> for RegSHOAction {
     const VALID_CODES: [u8; 3] = [b'0', b'1', b'2'];
 
@@ -501,7 +501,7 @@ impl TryFrom<u8> for IssueClassificationCodes {
     }
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 impl EnumTestHelpers<16> for IssueClassificationCodes {
     const VALID_CODES: [u8; 16] = [
         b'A', b'B', b'C', b'F', b'I', b'L', b'N', b'O', b'P', b'Q', b'R', b'S', b'T', b'U', b'V',
@@ -540,7 +540,7 @@ impl TryFrom<u8> for MarketMakerMode {
     }
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 impl EnumTestHelpers<5> for MarketMakerMode {
     const VALID_CODES: [u8; 5] = [b'N', b'P', b'S', b'R', b'L'];
 
@@ -576,7 +576,7 @@ impl TryFrom<u8> for MarketParticipantState {
     }
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 impl EnumTestHelpers<5> for MarketParticipantState {
     const VALID_CODES: [u8; 5] = [b'A', b'E', b'W', b'S', b'D'];
 
@@ -608,7 +608,7 @@ impl TryFrom<u8> for MWCBLevel {
     }
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 impl EnumTestHelpers<3> for MWCBLevel {
     const VALID_CODES: [u8; 3] = [b'1', b'2', b'3'];
 
@@ -638,9 +638,9 @@ impl TryFrom<u8> for IPOReleaseQualifier {
     }
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 impl EnumTestHelpers<2> for IPOReleaseQualifier {
-    const VALID_CODES: [u8; 2] = [b'A', b'P'];
+    const VALID_CODES: [u8; 2] = [b'A', b'C'];
 
     fn generate_example_code() -> u8 {
         let i = fastrand::usize(..Self::VALID_CODES.len());
@@ -668,7 +668,7 @@ impl TryFrom<u8> for BuySellIndicator {
     }
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 impl EnumTestHelpers<2> for BuySellIndicator {
     const VALID_CODES: [u8; 2] = [b'S', b'B'];
 
@@ -702,7 +702,7 @@ impl TryFrom<u8> for CrossType {
     }
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 impl EnumTestHelpers<4> for CrossType {
     const VALID_CODES: [u8; 4] = [b'O', b'C', b'H', b'I'];
 
@@ -736,7 +736,7 @@ impl TryFrom<u8> for ImbalanceDirection {
     }
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 impl EnumTestHelpers<4> for ImbalanceDirection {
     const VALID_CODES: [u8; 4] = [b'B', b'S', b'N', b'O'];
 

@@ -3,9 +3,9 @@ use crate::messageheader::MessageHeader;
 use crate::types::{BinaryMessageLength, MessageHeaderType, Parse, ParseError, Stock};
 use byteorder::{BigEndian, ByteOrder};
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 use crate::types::{EnumTestHelpers, GenerateBinaryExample};
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 use fastrand::Rng;
 
 #[derive(Debug, PartialEq)]
@@ -69,7 +69,7 @@ impl MessageHeaderType for NetOrderImbalanceIndicator {
     const MESSAGE_TYPE: u8 = b'I';
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 impl GenerateBinaryExample<{ Self::LENGTH }> for NetOrderImbalanceIndicator {
     fn generate_example_message() -> [u8; Self::LENGTH] {
         let mut rng = Rng::new();

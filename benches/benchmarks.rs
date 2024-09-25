@@ -1,3 +1,6 @@
+// RUN THIS FILE WITH:
+// cargo bench --features bench
+
 #![cfg(feature = "bench")]
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use fastasx::types::{EnumTestHelpers, GenerateBinaryExample, Parse};
@@ -259,17 +262,6 @@ fn bench_add_order(c: &mut Criterion) {
     });
 }
 
-fn bench_add_order_mpid(c: &mut Criterion) {
-    let example_msg = addordermessages::AddOrderMPID::generate_example_message();
-
-    c.bench_function("add_order_mpid", |b| {
-        b.iter(|| {
-            let parsed = addordermessages::AddOrderMPID::parse(black_box(&example_msg));
-            assert!(parsed.is_ok(), "Parsing the add order mpid message failed");
-        });
-    });
-}
-
 fn bench_net_order_imbalance_indicator(c: &mut Criterion) {
     let example_msg = noiimessages::NetOrderImbalanceIndicator::generate_example_message();
 
@@ -307,7 +299,6 @@ criterion_group!(
     bench_order_delete,
     bench_order_replace,
     bench_add_order,
-    bench_add_order_mpid,
     bench_net_order_imbalance_indicator,
 );
 

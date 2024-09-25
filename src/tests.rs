@@ -5,6 +5,7 @@ use stockmessages::{
     IPOQuotingPeriodUpdate, MWCBDeclineLevel, MWCBStatus, MarketParticipantPosition,
     RegSHOShortSalePriceTestRestriction, StockDirectory, StockTradingAction,
 };
+use systemmessages::SystemEventMessage;
 use trademessages::{BrokenTrade, CrossingTrade, NonCrossingTrade};
 use types::GenerateBinaryExample;
 
@@ -178,13 +179,6 @@ fn test_add_order() {
     let example_msg = addordermessages::AddOrder::generate_example_message();
     let parsed = addordermessages::AddOrder::parse(&example_msg);
     assert!(parsed.is_ok(), "Parsing the add order message failed");
-}
-
-#[test]
-fn test_add_order_mpid() {
-    let example_msg = addordermessages::AddOrderMPID::generate_example_message();
-    let parsed = addordermessages::AddOrderMPID::parse(&example_msg);
-    assert!(parsed.is_ok(), "Parsing the add order mpid message failed");
 }
 
 // NOII Messages

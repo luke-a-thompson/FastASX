@@ -1,19 +1,17 @@
 #![feature(test)]
 extern crate test;
-use addordermessages::AddOrder;
 
 use byteorder::{BigEndian, ByteOrder};
 use ringbuf::{traits::*, HeapRb};
 use std::fs::File;
 use std::io::{self, Read};
 use std::sync::atomic::AtomicBool;
-use types::{BinaryMessageLength, MessageHeaderType, Parse, ParseError};
+use types::{AltBinaryMessageLength, AltMessageHeaderType, BinaryMessageLength, MessageHeaderType, Parse, ParseError};
 
 #[cfg(any(test, feature = "bench"))]
 mod tests;
 
-use systemmessages::*;
-
+pub mod orderbook;
 pub mod addordermessages;
 pub mod enums;
 pub mod helpers;
@@ -179,10 +177,10 @@ pub fn main() -> Result<(), io::Error> {
                         msg_ct += 1;
                         // println!("{:?}", event);
                     }
-                    &addordermessages::AddOrderMPID::MESSAGE_TYPE => {
-                        parse_fixed_length_message::<
-                            { addordermessages::AddOrderMPID::LENGTH },
-                            addordermessages::AddOrderMPID,
+                    &addordermessages::AddOrder::ALT_MESSAGE_TYPE => {
+                        let order = parse_fixed_length_message::<
+                            { addordermessages::AddOrder::ALT_LENGTH },
+                            addordermessages::AddOrder,
                             _,
                         >(&mut consumer)
                         .expect("msg parse failed");

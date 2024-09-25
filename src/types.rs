@@ -83,6 +83,15 @@ pub trait MessageHeaderType {
     const MESSAGE_TYPE: u8;
 }
 
+//  The below are for more detailed versions of the AddOrder message (with price)
+pub trait AltBinaryMessageLength {
+    const ALT_LENGTH: usize;
+}
+
+pub trait AltMessageHeaderType {
+    const ALT_MESSAGE_TYPE: u8;
+}
+
 pub trait Parse: Sized {
     fn parse(input: &[u8]) -> Result<Self, ParseError>;
 }

@@ -24,7 +24,7 @@ pub enum MessageTypes {
     MWCBStatus(stockmessages::MWCBStatus),
     IPOQuotingPeriodUpdate(stockmessages::IPOQuotingPeriodUpdate),
     AddOrder(addordermessages::AddOrder),
-    AddOrderMPID(addordermessages::AddOrderMPID),
+    // AddOrderMPID(addordermessages::AddOrderMPID),
     OrderExecuted(modifyordermessages::OrderExecuted),
     OrderExecutedWithPrice(modifyordermessages::OrderExecutedWithPrice),
     OrderCancel(modifyordermessages::OrderCancel),

@@ -680,7 +680,7 @@ impl EnumTestHelpers<2> for IPOReleaseQualifier {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum BuySellIndicator {
     Sell,
     Buy,

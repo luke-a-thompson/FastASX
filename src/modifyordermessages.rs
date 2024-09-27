@@ -209,13 +209,13 @@ impl GenerateExampleMessage<{ Self::LENGTH }> for OrderDelete {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct OrderReplace {
-    header: MessageHeader,
-    original_order_reference_number: u64,
-    new_order_reference_number: u64, // Assert old order dropped?
-    shares: u32,
-    price: u32,
+    pub header: MessageHeader,
+    pub original_order_reference_number: u64,
+    pub new_order_reference_number: u64, // Assert old order dropped?
+    pub shares: u32,
+    pub price: u32,
 }
 
 impl Parse for OrderReplace {

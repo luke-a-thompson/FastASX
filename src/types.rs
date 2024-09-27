@@ -78,6 +78,18 @@ pub enum ParseError {
     InvalidPriceVariationIndicator { invalid_byte: u8 },
 }
 
+#[derive(Debug, Error)]
+pub enum OrderBookError {
+    #[error("Attempted to add duplicate order")]
+    DuplicateOrder,
+
+    #[error("Attempted to remove non-existent order")]
+    NonExistentOrder,
+
+    #[error("Attempted to cancel more shares than available")]
+    InvalidCancellation,
+}
+
 pub trait BinaryMessageLength {
     const LENGTH: usize;
 }

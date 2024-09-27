@@ -1,15 +1,20 @@
 use crate::addordermessages::AddOrder;
 use crate::enums::BuySellIndicator;
-use crate::modifyordermessages::{OrderCancel, OrderDelete, OrderExecuted, OrderReplace};
+use crate::modifyordermessages::{
+    OrderCancel, OrderDelete, OrderExecuted, OrderExecutedWithPrice, OrderReplace,
+};
 use crate::stockdirectory::StockDirectoryManager;
 use crate::types::OrderBookError;
 use std::cmp::Reverse;
 use std::collections::{BTreeMap, HashMap};
+
 type Price = u32;
 type StockLocateCode = u16;
 type OrderReferenceNumber = u64;
 
-/// We maintain two maps:
+/// Manages the order books for all stocks.
+///
+/// # Fields
 /// - order_books: This is the stock locate code > limit order book.
 /// - order_price_map: This is the order reference number > (stock locate code, price, buy sell indicator). This is needed as no orders (except buys) have a price.
 pub struct OrderBookManager {
@@ -30,8 +35,13 @@ impl OrderBookManager {
     }
 
     /// Add an order to the order book.
+    ///
     /// # Arguments
     /// * `order` - The order to add.
+    ///
+    /// # Returns
+    /// * `Ok(())` - If the order was added successfully.
+    /// * `Err(OrderBookError)` - If the order could not be added.
     pub fn add_order(&mut self, order: AddOrder) -> Result<(), OrderBookError> {
         self.order_price_map.insert(
             order.order_reference_number,
@@ -48,11 +58,78 @@ impl OrderBookManager {
         Ok(())
     }
 
-    pub fn execute_order(&mut self, order: OrderExecuted) -> Result<(), OrderBookError> {
-        todo!()
+    /// Execute an order in the order book.
+    ///
+    /// # Arguments
+    /// * `order` - The order to execute.
+    ///
+    /// # Returns
+    /// * `Ok(u64)` - The match number of the executed order.
+    /// * `Err(OrderBookError)` - If the order does not exist.
+    pub fn execute_order(&mut self, order: OrderExecuted) -> Result<u64, OrderBookError> {
+        match self.order_price_map.get(&order.order_reference_number) {
+            Some((stock_locate, price, buy_sell_indicator)) => {
+                self.order_books
+                    .entry(*stock_locate)
+                    .or_insert_with(LimitOrderBook::new)
+                    .cancel_order(
+                        order.order_reference_number,
+                        order.executed_shares,
+                        *price, // Must deref as we do .get, which returns a borrow, not a value (like .remove)
+                        *buy_sell_indicator,
+                        false,
+                    )?;
+                Ok(order.match_number)
+            }
+            None => Err(OrderBookError::NonExistentOrder),
+        }
+    }
+
+    /// Execute an order in the order book with a price.
+    ///
+    /// # Arguments
+    /// * `order` - The order to execute.
+    ///
+    /// # Returns
+    /// * `Ok((u64, Price, bool))` - The match number, execution price, and whether the order is printable.
+    /// * `Err(OrderBookError)` - If the order does not exist.
+    pub fn execute_order_with_price(
+        &mut self,
+        order: OrderExecutedWithPrice,
+    ) -> Result<(u64, Price, bool), OrderBookError> {
+        match self
+            .order_price_map
+            .get(&order.order_executed_message.order_reference_number)
+        {
+            Some((stock_locate, price, buy_sell_indicator)) => {
+                self.order_books
+                    .entry(*stock_locate)
+                    .or_insert_with(LimitOrderBook::new)
+                    .cancel_order(
+                        order.order_executed_message.order_reference_number,
+                        order.order_executed_message.executed_shares,
+                        *price, // Must deref as we do .get, which returns a borrow, not a value (like .remove)
+                        *buy_sell_indicator,
+                        false,
+                    )?;
+                Ok((
+                    order.order_executed_message.match_number,
+                    order.exec_price,
+                    order.printable,
+                ))
+            }
+            None => Err(OrderBookError::NonExistentOrder),
+        }
     }
 
     /// Replace an order in the order book. Changes the order reference number, shares, price.
+    ///
+    /// # Arguments
+    /// * `order` - The order to replace.
+    ///
+    /// # Returns
+    /// * `Ok(())` - If the order was replaced successfully.
+    /// * `Err(OrderBookError)` - If the order could not be replaced.
     pub fn replace_order(&mut self, order: OrderReplace) -> Result<(), OrderBookError> {
         match self
             .order_price_map
@@ -94,8 +171,13 @@ impl OrderBookManager {
     }
 
     /// Cancel some shares of an order from the order book.
+    ///
     /// # Arguments
     /// * `order` - The order to cancel some shares of.
+    ///
+    /// # Returns
+    /// * `Ok(())` - If the order was cancelled successfully.
+    /// * `Err(OrderBookError)` - If the order could not be cancelled.
     pub fn cancel_order(&mut self, order: OrderCancel) -> Result<(), OrderBookError> {
         match self.order_price_map.get(&order.order_reference_number) {
             Some((stock_locate, price, buy_sell_indicator)) => {
@@ -107,6 +189,7 @@ impl OrderBookManager {
                         order.canceled_shares,
                         *price, // Must deref as we do .get, which returns a borrow, not a value (like .remove)
                         *buy_sell_indicator,
+                        true,
                     )?;
                 Ok(())
             }
@@ -120,6 +203,10 @@ impl OrderBookManager {
     /// Delete an order from the order book.
     /// # Arguments
     /// * `order` - The order to delete.
+    ///
+    /// # Returns
+    /// * `Ok(())` - If the order was deleted successfully.
+    /// * `Err(OrderBookError)` - If the order could not be deleted.
     /// We remove the order from the order map (getting stock locate, price and buy sell indicator), then use this data to delete it from the order book.
     pub fn delete_order(&mut self, order: OrderDelete) -> Result<(), OrderBookError> {
         match self.order_price_map.remove(&order.order_reference_number) {
@@ -211,16 +298,25 @@ impl LimitOrderBook {
         cancelled_shares: u32,
         price: Price,
         buy_sell_indicator: BuySellIndicator,
+        order_cancellation: bool, // If true, the order is being cancelled, not executed
     ) -> Result<(), OrderBookError> {
         match buy_sell_indicator {
             BuySellIndicator::Buy => {
                 let price_bucket = self.bid_book.get_mut(&Reverse(price)).unwrap();
-                price_bucket.cancel_order(order_reference_number, cancelled_shares)?;
+                price_bucket.cancel_order(
+                    order_reference_number,
+                    cancelled_shares,
+                    order_cancellation,
+                )?;
                 self.update_best_prices();
             }
             BuySellIndicator::Sell => {
                 let price_bucket = self.ask_book.get_mut(&price).unwrap();
-                price_bucket.cancel_order(order_reference_number, cancelled_shares)?;
+                price_bucket.cancel_order(
+                    order_reference_number,
+                    cancelled_shares,
+                    order_cancellation,
+                )?;
                 self.update_best_prices();
             }
         }
@@ -236,7 +332,7 @@ impl LimitOrderBook {
         match buy_sell_indicator {
             BuySellIndicator::Buy => {
                 let price_bucket = self.bid_book.get_mut(&Reverse(price)).unwrap();
-                let order = price_bucket.remove_order(order_reference_number)?;
+                let order = price_bucket.delete_order(order_reference_number)?;
 
                 if price_bucket.share_quantity == 0 {
                     log::trace!("Buy side price bucket at {} is empty, removing it", price);
@@ -248,7 +344,7 @@ impl LimitOrderBook {
             }
             BuySellIndicator::Sell => {
                 let price_bucket = self.ask_book.get_mut(&price).unwrap();
-                let order = price_bucket.remove_order(order_reference_number)?;
+                let order = price_bucket.delete_order(order_reference_number)?;
 
                 if price_bucket.share_quantity == 0 {
                     log::trace!("Sell side price bucket at {} is empty, removing it", price);
@@ -285,10 +381,16 @@ impl PriceBucket {
         }
     }
 
+    /// Cancel shares off an order in order book.
+    /// # Arguments
+    /// * `order_reference_number` - The order reference number of the order to cancel.
+    /// * `cancelled_shares` - The number of shares to cancel.
+    /// * `order_cancellation` - If true, the order is being cancelled, not executed.
     fn cancel_order(
         &mut self,
         order_reference_number: OrderReferenceNumber,
         cancelled_shares: u32,
+        order_cancellation: bool, // If true, the order is being cancelled, not executed
     ) -> Result<(), OrderBookError> {
         let order = self
             .orders
@@ -299,14 +401,16 @@ impl PriceBucket {
         }
         self.share_quantity -= cancelled_shares;
         order.shares -= cancelled_shares;
-        if order.shares == 0 {
+
+        if order.shares == 0 && order_cancellation {
             log::warn!("Order cancellation resulted in 0 shares, deleting order");
-            self.remove_order(order_reference_number)?;
+            self.delete_order(order_reference_number)?;
         }
+
         Ok(())
     }
 
-    fn remove_order(
+    fn delete_order(
         &mut self,
         order_reference_number: OrderReferenceNumber,
     ) -> Result<AddOrder, OrderBookError> {
@@ -352,8 +456,8 @@ mod tests {
         };
 
         let stock_locate = header.stock_locate;
-        book_manager.add_order(buy_order);
-        book_manager.add_order(sell_order);
+        book_manager.add_order(buy_order).unwrap();
+        book_manager.add_order(sell_order).unwrap();
 
         assert_eq!(
             book_manager

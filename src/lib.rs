@@ -8,3 +8,6 @@ pub mod stockmessages;
 pub mod systemmessages;
 pub mod trademessages;
 pub mod types;
+
+pub mod orderbook;
+pub mod stockdirectory;

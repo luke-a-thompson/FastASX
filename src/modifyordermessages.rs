@@ -9,10 +9,10 @@ use fastrand::Rng;
 
 #[derive(Debug, PartialEq)]
 pub struct OrderExecuted {
-    header: MessageHeader,
-    order_reference_number: u64,
-    executed_shares: u32,
-    match_number: u64, // matches trade break message
+    pub header: MessageHeader,
+    pub order_reference_number: u64,
+    pub executed_shares: u32,
+    pub match_number: u64, // matches trade break message
 }
 
 impl Parse for OrderExecuted {
@@ -62,9 +62,9 @@ impl GenerateExampleMessage<{ Self::LENGTH }> for OrderExecuted {
 
 #[derive(Debug, PartialEq)]
 pub struct OrderExecutedWithPrice {
-    order_executed_message: OrderExecuted,
-    printable: bool,
-    exec_price: u32,
+    pub order_executed_message: OrderExecuted,
+    pub printable: bool,
+    pub exec_price: u32,
 }
 
 impl Parse for OrderExecutedWithPrice {

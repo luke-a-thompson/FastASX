@@ -182,6 +182,19 @@ pub fn main() -> Result<(), io::Error> {
                         msg_ct += 1;
                         log::trace!("Parsed BrokenTrade");
                     }
+                    &modifyordermessages::OrderExecuted::MESSAGE_TYPE => {
+                        let order = parse_fixed_length_message::<
+                            { modifyordermessages::OrderExecuted::LENGTH },
+                            modifyordermessages::OrderExecuted,
+                            _,
+                        >(&mut consumer)
+                        .expect("msg parse failed");
+                        order_book_manager
+                            .execute_order(order)
+                            .expect("order book execute failed");
+                        msg_ct += 1;
+                        log::trace!("Parsed OrderExecuted");
+                    }
                     &modifyordermessages::OrderExecutedWithPrice::MESSAGE_TYPE => {
                         parse_fixed_length_message::<
                             { modifyordermessages::OrderExecutedWithPrice::LENGTH },
@@ -204,16 +217,6 @@ pub fn main() -> Result<(), io::Error> {
                             .expect("order book delete failed");
                         msg_ct += 1;
                         log::trace!("Parsed OrderDelete");
-                    }
-                    &modifyordermessages::OrderExecuted::MESSAGE_TYPE => {
-                        parse_fixed_length_message::<
-                            { modifyordermessages::OrderExecuted::LENGTH },
-                            modifyordermessages::OrderExecuted,
-                            _,
-                        >(&mut consumer)
-                        .expect("msg parse failed");
-                        msg_ct += 1;
-                        log::trace!("Parsed OrderExecuted");
                     }
                     &stockmessages::StockTradingAction::MESSAGE_TYPE => {
                         parse_fixed_length_message::<

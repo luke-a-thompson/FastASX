@@ -4,7 +4,7 @@ use crate::types::{BinaryMessageLength, MessageHeaderType, Parse, ParseError, St
 use byteorder::{BigEndian, ByteOrder};
 
 #[cfg(any(test, feature = "bench"))]
-use crate::types::{EnumTestHelpers, GenerateBinaryExample};
+use crate::types::{EnumTestHelpers, GenerateExampleMessage};
 #[cfg(any(test, feature = "bench"))]
 use fastrand::Rng;
 
@@ -70,15 +70,15 @@ impl MessageHeaderType for NetOrderImbalanceIndicator {
 }
 
 #[cfg(any(test, feature = "bench"))]
-impl GenerateBinaryExample<{ Self::LENGTH }> for NetOrderImbalanceIndicator {
-    fn generate_example_message() -> [u8; Self::LENGTH] {
+impl GenerateExampleMessage<{ Self::LENGTH }> for NetOrderImbalanceIndicator {
+    fn generate_binary_example() -> [u8; Self::LENGTH] {
         let mut rng = Rng::new();
 
-        let header = MessageHeader::generate_example_message();
+        let header = MessageHeader::generate_binary_example();
         let paired_shares = rng.u64(..).to_be_bytes();
         let imbalance_shares = rng.u64(..).to_be_bytes();
         let imbalance_direction = ImbalanceDirection::generate_example_code();
-        let stock = Stock::generate_example_message();
+        let stock = Stock::generate_binary_example();
         let far_price = rng.u32(..).to_be_bytes();
         let near_price = rng.u32(..).to_be_bytes();
         let current_reference_price = rng.u32(..).to_be_bytes();

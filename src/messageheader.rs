@@ -3,17 +3,17 @@ use byteorder::{BigEndian, ByteOrder};
 use crate::types::BinaryMessageLength;
 
 #[cfg(any(test, feature = "bench"))]
-use crate::types::GenerateBinaryExample;
+use crate::types::GenerateExampleMessage;
 
 #[cfg(any(test, feature = "bench"))]
 use fastrand::Rng;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct MessageHeader {
-    message_type: char,
-    stock_locate: u16,
-    tracking_number: u16,
-    timestamp: u64,
+    pub message_type: char,
+    pub stock_locate: u16,
+    pub tracking_number: u16,
+    pub timestamp: u64,
 }
 
 impl MessageHeader {
@@ -36,8 +36,8 @@ impl BinaryMessageLength for MessageHeader {
 }
 
 #[cfg(any(test, feature = "bench"))]
-impl GenerateBinaryExample<{ Self::LENGTH }> for MessageHeader {
-    fn generate_example_message() -> [u8; Self::LENGTH] {
+impl GenerateExampleMessage<{ Self::LENGTH }> for MessageHeader {
+    fn generate_binary_example() -> [u8; Self::LENGTH] {
         let mut rng = Rng::new();
 
         let stock_locate = rng.u16(..).to_be_bytes();

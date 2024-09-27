@@ -3,7 +3,7 @@ use crate::messageheader::MessageHeader;
 use crate::types::{BinaryMessageLength, MessageHeaderType, Parse, ParseError};
 
 #[cfg(any(test, feature = "bench"))]
-use crate::types::{EnumTestHelpers, GenerateBinaryExample};
+use crate::types::{EnumTestHelpers, GenerateExampleMessage};
 
 #[derive(Debug, PartialEq)]
 pub struct SystemEventMessage {
@@ -33,9 +33,9 @@ impl MessageHeaderType for SystemEventMessage {
 }
 
 #[cfg(any(test, feature = "bench"))]
-impl GenerateBinaryExample<{ SystemEventMessage::LENGTH }> for SystemEventMessage {
-    fn generate_example_message() -> [u8; SystemEventMessage::LENGTH] {
-        let header = MessageHeader::generate_example_message();
+impl GenerateExampleMessage<{ SystemEventMessage::LENGTH }> for SystemEventMessage {
+    fn generate_binary_example() -> [u8; SystemEventMessage::LENGTH] {
+        let header = MessageHeader::generate_binary_example();
         let event_code = SystemEventCode::generate_example_code();
 
         let mut message = [0u8; SystemEventMessage::LENGTH];

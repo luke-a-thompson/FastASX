@@ -3,7 +3,7 @@
 
 #![cfg(feature = "bench")]
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use fastasx::types::{EnumTestHelpers, GenerateBinaryExample, Parse};
+use fastasx::types::{EnumTestHelpers, GenerateExampleMessage, Parse};
 use fastasx::{
     addordermessages, enums, helpers, modifyordermessages, noiimessages, stockmessages,
     systemmessages, trademessages, types,
@@ -42,7 +42,7 @@ fn bench_issue_classification_values(c: &mut Criterion) {
 }
 
 fn bench_stock_parsing(c: &mut Criterion) {
-    let example_msg = types::Stock::generate_example_message();
+    let example_msg = types::Stock::generate_binary_example();
 
     c.bench_function("stock_parsing", |b| {
         b.iter(|| {
@@ -52,7 +52,7 @@ fn bench_stock_parsing(c: &mut Criterion) {
 }
 
 fn bench_system_event_message(c: &mut Criterion) {
-    let example_msg = systemmessages::SystemEventMessage::generate_example_message();
+    let example_msg = systemmessages::SystemEventMessage::generate_binary_example();
 
     c.bench_function("system_event_message", |b| {
         b.iter(|| {
@@ -63,7 +63,7 @@ fn bench_system_event_message(c: &mut Criterion) {
 }
 
 fn bench_stock_directory(c: &mut Criterion) {
-    let example_msg = stockmessages::StockDirectory::generate_example_message();
+    let example_msg = stockmessages::StockDirectory::generate_binary_example();
 
     c.bench_function("stock_directory", |b| {
         b.iter(|| {
@@ -74,7 +74,7 @@ fn bench_stock_directory(c: &mut Criterion) {
 }
 
 fn bench_stock_trading_action(c: &mut Criterion) {
-    let example_msg = stockmessages::StockTradingAction::generate_example_message();
+    let example_msg = stockmessages::StockTradingAction::generate_binary_example();
 
     c.bench_function("stock_trading_action", |b| {
         b.iter(|| {
@@ -88,8 +88,7 @@ fn bench_stock_trading_action(c: &mut Criterion) {
 }
 
 fn bench_reg_sho_short_sale_price_test_restriction(c: &mut Criterion) {
-    let example_msg =
-        stockmessages::RegSHOShortSalePriceTestRestriction::generate_example_message();
+    let example_msg = stockmessages::RegSHOShortSalePriceTestRestriction::generate_binary_example();
 
     c.bench_function("reg_sho_short_sale_price_test_restriction", |b| {
         b.iter(|| {
@@ -104,7 +103,7 @@ fn bench_reg_sho_short_sale_price_test_restriction(c: &mut Criterion) {
 }
 
 fn bench_market_participant_position(c: &mut Criterion) {
-    let example_msg = stockmessages::MarketParticipantPosition::generate_example_message();
+    let example_msg = stockmessages::MarketParticipantPosition::generate_binary_example();
 
     c.bench_function("market_participant_position", |b| {
         b.iter(|| {
@@ -118,7 +117,7 @@ fn bench_market_participant_position(c: &mut Criterion) {
 }
 
 fn bench_mwcb_decline_level(c: &mut Criterion) {
-    let example_msg = stockmessages::MWCBDeclineLevel::generate_example_message();
+    let example_msg = stockmessages::MWCBDeclineLevel::generate_binary_example();
 
     c.bench_function("mwcb_decline_level", |b| {
         b.iter(|| {
@@ -132,7 +131,7 @@ fn bench_mwcb_decline_level(c: &mut Criterion) {
 }
 
 fn bench_mwcb_status(c: &mut Criterion) {
-    let example_msg = stockmessages::MWCBStatus::generate_example_message();
+    let example_msg = stockmessages::MWCBStatus::generate_binary_example();
 
     c.bench_function("mwcb_status", |b| {
         b.iter(|| {
@@ -143,7 +142,7 @@ fn bench_mwcb_status(c: &mut Criterion) {
 }
 
 fn bench_ipo_quoting_period_update(c: &mut Criterion) {
-    let example_msg = stockmessages::IPOQuotingPeriodUpdate::generate_example_message();
+    let example_msg = stockmessages::IPOQuotingPeriodUpdate::generate_binary_example();
 
     c.bench_function("ipo_quoting_period_update", |b| {
         b.iter(|| {
@@ -157,7 +156,7 @@ fn bench_ipo_quoting_period_update(c: &mut Criterion) {
 }
 
 fn bench_non_crossing_trade(c: &mut Criterion) {
-    let example_msg = trademessages::NonCrossingTrade::generate_example_message();
+    let example_msg = trademessages::NonCrossingTrade::generate_binary_example();
 
     c.bench_function("non_crossing_trade", |b| {
         b.iter(|| {
@@ -171,7 +170,7 @@ fn bench_non_crossing_trade(c: &mut Criterion) {
 }
 
 fn bench_crossing_trade(c: &mut Criterion) {
-    let example_msg = trademessages::CrossingTrade::generate_example_message();
+    let example_msg = trademessages::CrossingTrade::generate_binary_example();
 
     c.bench_function("crossing_trade", |b| {
         b.iter(|| {
@@ -182,7 +181,7 @@ fn bench_crossing_trade(c: &mut Criterion) {
 }
 
 fn bench_broken_trade(c: &mut Criterion) {
-    let example_msg = trademessages::BrokenTrade::generate_example_message();
+    let example_msg = trademessages::BrokenTrade::generate_binary_example();
 
     c.bench_function("broken_trade", |b| {
         b.iter(|| {
@@ -193,7 +192,7 @@ fn bench_broken_trade(c: &mut Criterion) {
 }
 
 fn bench_order_executed(c: &mut Criterion) {
-    let example_msg = modifyordermessages::OrderExecuted::generate_example_message();
+    let example_msg = modifyordermessages::OrderExecuted::generate_binary_example();
 
     c.bench_function("order_executed", |b| {
         b.iter(|| {
@@ -204,7 +203,7 @@ fn bench_order_executed(c: &mut Criterion) {
 }
 
 fn bench_order_executed_with_price(c: &mut Criterion) {
-    let example_msg = modifyordermessages::OrderExecutedWithPrice::generate_example_message();
+    let example_msg = modifyordermessages::OrderExecutedWithPrice::generate_binary_example();
 
     c.bench_function("order_executed_with_price", |b| {
         b.iter(|| {
@@ -219,7 +218,7 @@ fn bench_order_executed_with_price(c: &mut Criterion) {
 }
 
 fn bench_order_cancel(c: &mut Criterion) {
-    let example_msg = modifyordermessages::OrderCancel::generate_example_message();
+    let example_msg = modifyordermessages::OrderCancel::generate_binary_example();
 
     c.bench_function("order_cancel", |b| {
         b.iter(|| {
@@ -230,7 +229,7 @@ fn bench_order_cancel(c: &mut Criterion) {
 }
 
 fn bench_order_delete(c: &mut Criterion) {
-    let example_msg = modifyordermessages::OrderDelete::generate_example_message();
+    let example_msg = modifyordermessages::OrderDelete::generate_binary_example();
 
     c.bench_function("order_delete", |b| {
         b.iter(|| {
@@ -241,7 +240,7 @@ fn bench_order_delete(c: &mut Criterion) {
 }
 
 fn bench_order_replace(c: &mut Criterion) {
-    let example_msg = modifyordermessages::OrderReplace::generate_example_message();
+    let example_msg = modifyordermessages::OrderReplace::generate_binary_example();
 
     c.bench_function("order_replace", |b| {
         b.iter(|| {
@@ -252,7 +251,7 @@ fn bench_order_replace(c: &mut Criterion) {
 }
 
 fn bench_add_order(c: &mut Criterion) {
-    let example_msg = addordermessages::AddOrder::generate_example_message();
+    let example_msg = addordermessages::AddOrder::generate_binary_example();
 
     c.bench_function("add_order", |b| {
         b.iter(|| {
@@ -263,7 +262,7 @@ fn bench_add_order(c: &mut Criterion) {
 }
 
 fn bench_net_order_imbalance_indicator(c: &mut Criterion) {
-    let example_msg = noiimessages::NetOrderImbalanceIndicator::generate_example_message();
+    let example_msg = noiimessages::NetOrderImbalanceIndicator::generate_binary_example();
 
     c.bench_function("net_order_imbalance_indicator", |b| {
         b.iter(|| {

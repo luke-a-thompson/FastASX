@@ -4,7 +4,7 @@ use crate::types::{BinaryMessageLength, MessageHeaderType, Parse, ParseError, St
 use byteorder::{BigEndian, ByteOrder};
 
 #[cfg(any(test, feature = "bench"))]
-use crate::types::{EnumTestHelpers, GenerateBinaryExample};
+use crate::types::{EnumTestHelpers, GenerateExampleMessage};
 #[cfg(any(test, feature = "bench"))]
 use fastrand::Rng;
 
@@ -55,15 +55,15 @@ impl MessageHeaderType for NonCrossingTrade {
 }
 
 #[cfg(any(test, feature = "bench"))]
-impl GenerateBinaryExample<{ Self::LENGTH }> for NonCrossingTrade {
-    fn generate_example_message() -> [u8; Self::LENGTH] {
+impl GenerateExampleMessage<{ Self::LENGTH }> for NonCrossingTrade {
+    fn generate_binary_example() -> [u8; Self::LENGTH] {
         let mut rng = Rng::new();
 
-        let header = MessageHeader::generate_example_message();
+        let header = MessageHeader::generate_binary_example();
         let order_reference_number = rng.u64(..).to_be_bytes();
         let buy_sell_indicator = b'B';
         let shares = rng.u32(..).to_be_bytes();
-        let stock = Stock::generate_example_message();
+        let stock = Stock::generate_binary_example();
         let price = rng.u32(..).to_be_bytes();
         let match_number = rng.u64(..).to_be_bytes();
 
@@ -128,13 +128,13 @@ impl MessageHeaderType for CrossingTrade {
 }
 
 #[cfg(any(test, feature = "bench"))]
-impl GenerateBinaryExample<{ Self::LENGTH }> for CrossingTrade {
-    fn generate_example_message() -> [u8; Self::LENGTH] {
+impl GenerateExampleMessage<{ Self::LENGTH }> for CrossingTrade {
+    fn generate_binary_example() -> [u8; Self::LENGTH] {
         let mut rng = Rng::new();
 
-        let header = MessageHeader::generate_example_message();
+        let header = MessageHeader::generate_binary_example();
         let shares = rng.u64(..).to_be_bytes();
-        let stock = Stock::generate_example_message();
+        let stock = Stock::generate_binary_example();
         let cross_price = rng.u32(..).to_be_bytes();
         let match_number = rng.u64(..).to_be_bytes();
         let cross_type = CrossType::generate_example_code();
@@ -181,11 +181,11 @@ impl MessageHeaderType for BrokenTrade {
 }
 
 #[cfg(any(test, feature = "bench"))]
-impl GenerateBinaryExample<{ Self::LENGTH }> for BrokenTrade {
-    fn generate_example_message() -> [u8; Self::LENGTH] {
+impl GenerateExampleMessage<{ Self::LENGTH }> for BrokenTrade {
+    fn generate_binary_example() -> [u8; Self::LENGTH] {
         let mut rng = Rng::new();
 
-        let header = MessageHeader::generate_example_message();
+        let header = MessageHeader::generate_binary_example();
         let match_number = rng.u64(..).to_be_bytes();
 
         let mut message = [0; Self::LENGTH];

@@ -1,17 +1,20 @@
 use crate::enums::BuySellIndicator;
 use crate::messageheader::MessageHeader;
-use crate::types::{BinaryMessageLength, MessageHeaderType, Parse, ParseError, Stock, AltBinaryMessageLength, AltMessageHeaderType};
-use byteorder::{BigEndian, ByteOrder};
 use crate::types::MPID;
+use crate::types::{
+    AltBinaryMessageLength, AltMessageHeaderType, BinaryMessageLength, MessageHeaderType, Parse,
+    ParseError, Stock,
+};
+use byteorder::{BigEndian, ByteOrder};
 
 #[cfg(any(test, feature = "bench"))]
-use crate::types::{EnumTestHelpers, GenerateBinaryExample};
+use crate::types::{EnumTestHelpers, GenerateExampleMessage};
 #[cfg(any(test, feature = "bench"))]
 use fastrand::Rng;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct AddOrder {
-    header: MessageHeader,
+    pub header: MessageHeader,
     pub order_reference_number: u64,
     pub buy_sell_indicator: BuySellIndicator,
     pub shares: u32,
@@ -61,15 +64,15 @@ impl AltMessageHeaderType for AddOrder {
 }
 
 #[cfg(any(test, feature = "bench"))]
-impl GenerateBinaryExample<{ Self::LENGTH }> for AddOrder {
-    fn generate_example_message() -> [u8; Self::LENGTH] {
+impl GenerateExampleMessage<{ Self::LENGTH }> for AddOrder {
+    fn generate_binary_example() -> [u8; Self::LENGTH] {
         let mut rng = Rng::new();
 
-        let header = MessageHeader::generate_example_message();
+        let header = MessageHeader::generate_binary_example();
         let order_reference_number = rng.u64(..);
         let buy_sell_indicator = BuySellIndicator::generate_example_code();
         let shares = rng.u32(..);
-        let stock = Stock::generate_example_message();
+        let stock = Stock::generate_binary_example();
         let price = rng.u32(..);
 
         let mut example = [0; Self::LENGTH];

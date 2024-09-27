@@ -7,7 +7,7 @@ use crate::{
 #[cfg(any(test, feature = "bench"))]
 use crate::types::EnumTestHelpers;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum BoolOrUnavailable {
     Bool(bool),
     Str(&'static str),
@@ -74,7 +74,7 @@ impl EnumTestHelpers<6> for SystemEventCode {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum MarketCategory {
     NASDAQGlobalSelectMarket,
     NASDAQGlobalMarket,
@@ -148,7 +148,7 @@ impl EnumTestHelpers<2> for Authenticity {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum ShortSaleThresholdIndicator {
     Restricted,
     NotRestricted,
@@ -180,7 +180,39 @@ impl EnumTestHelpers<3> for ShortSaleThresholdIndicator {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
+pub enum LuldReferencePriceTier {
+    Tier1,
+    Tier2,
+    NotAvailable,
+}
+
+impl TryFrom<u8> for LuldReferencePriceTier {
+    type Error = ParseError;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            b'1' => Ok(LuldReferencePriceTier::Tier1),
+            b'2' => Ok(LuldReferencePriceTier::Tier2),
+            b' ' => Ok(LuldReferencePriceTier::NotAvailable),
+            _ => Err(ParseError::InvalidLuldReferencePriceTier {
+                invalid_byte: value,
+            }),
+        }
+    }
+}
+
+#[cfg(any(test, feature = "bench"))]
+impl EnumTestHelpers<3> for LuldReferencePriceTier {
+    const VALID_CODES: [u8; 3] = [b'1', b'2', b' '];
+
+    fn generate_example_code() -> u8 {
+        let i = fastrand::usize(..Self::VALID_CODES.len());
+        Self::VALID_CODES[i]
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
 pub enum FinancialStatusIndicator {
     Deficient,
     Delinquent,
@@ -453,7 +485,7 @@ pub enum TradingResumptionReasonCodes {
     NotAvailable,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum IssueClassificationCodes {
     AmericanDepositaryShare,
     Bond,
@@ -648,7 +680,7 @@ impl EnumTestHelpers<2> for IPOReleaseQualifier {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum BuySellIndicator {
     Sell,
     Buy,

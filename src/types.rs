@@ -4,8 +4,8 @@ pub type Stock = [u8; 8];
 pub type MPID = [u8; 4];
 
 #[cfg(any(test, feature = "bench"))]
-impl GenerateBinaryExample<8> for Stock {
-    fn generate_example_message() -> [u8; 8] {
+impl GenerateExampleMessage<8> for Stock {
+    fn generate_binary_example() -> [u8; 8] {
         [b'T', b'E', b'S', b'T', b' ', b' ', b' ', b' ']
     }
 }
@@ -41,6 +41,9 @@ pub enum ParseError {
 
     #[error("Invalid ShortSaleThresholdIndicator encountered: {invalid_byte}")]
     InvalidShortSaleThresholdIndicator { invalid_byte: u8 },
+
+    #[error("Invalid LuldReferencePriceTier encountered: {invalid_byte}")]
+    InvalidLuldReferencePriceTier { invalid_byte: u8 },
 
     #[error("Invalid TradingState encountered: {invalid_byte}")]
     InvalidTradingState { invalid_byte: u8 },
@@ -96,8 +99,8 @@ pub trait Parse: Sized {
     fn parse(input: &[u8]) -> Result<Self, ParseError>;
 }
 
-pub trait GenerateBinaryExample<const N: usize> {
-    fn generate_example_message() -> [u8; N];
+pub trait GenerateExampleMessage<const N: usize> {
+    fn generate_binary_example() -> [u8; N];
 }
 
 pub trait EnumTestHelpers<const N: usize> {

@@ -6,18 +6,22 @@ use ringbuf::{traits::*, HeapRb};
 use std::fs::File;
 use std::io::{self, Read};
 use std::sync::atomic::AtomicBool;
-use types::{AltBinaryMessageLength, AltMessageHeaderType, BinaryMessageLength, MessageHeaderType, Parse, ParseError};
+use types::{
+    AltBinaryMessageLength, AltMessageHeaderType, BinaryMessageLength, MessageHeaderType, Parse,
+    ParseError,
+};
 
 #[cfg(any(test, feature = "bench"))]
 mod tests;
 
-pub mod orderbook;
 pub mod addordermessages;
 pub mod enums;
 pub mod helpers;
 pub mod messageheader;
 pub mod modifyordermessages;
 pub mod noiimessages;
+pub mod orderbook;
+pub mod stockdirectory;
 pub mod stockmessages;
 pub mod systemmessages;
 pub mod trademessages;
@@ -26,43 +30,55 @@ pub mod types;
 const FILE_BUFFER_SIZE: usize = 2048 * 64; // Stack allocated
 const RING_BUFFER_SIZE: usize = 4096 * 2048; // Heap allocated
 
+/// Parses a message of fixed length N.
+/// If the message is not complete, it will attempt to parse an incomplete message.
+/// If the message is not parseable, it will return an error.
+///
+/// # Arguments
+/// * `consumer` - A consumer of bytes - RingBuf crate
+/// * `N` - The fixed length of the message. In the case of ITCH, this is present in the SoupBIN TCP header.
+/// * `T` - The type of message to parse
+/// * `C` - The type of consumer
+///
+/// # Returns
+/// * `Result<T, ParseError>` - The parsed message, or an error if the message is not parseable
 fn parse_fixed_length_message<const N: usize, T, C>(consumer: &mut C) -> Result<T, ParseError>
 where
     C: Consumer<Item = u8>,
     T: Parse + BinaryMessageLength,
 {
-    let mut buffer = [0u8; N];
+    let mut buffer = [0u8; N]; // N is the fixed length of the message
     let bytes_read = consumer.pop_slice(&mut buffer);
 
+    // Only parse incomplete when the message buffer length is less than the message length
     if bytes_read < N {
-        // Only parse incomplete when the message buffer length is less than the message length
-        // println!("{:?}", buffer);
-        let result = parse_incomplete_message::<T, C, N>(consumer, &mut buffer, bytes_read);
-        if result.is_err() {
-            // println!("{:?}", buffer);
-            // println!("Failed to parse incomplete message");
-        }
-        return result;
+        let result = parse_incomplete_message::<T, C, N>(consumer, &mut buffer, bytes_read)?;
+        return Ok(result);
     }
-    let result = T::parse(&buffer);
-    if result.is_err() {
-        // println!("{:x?}", buffer);
-        // println!("Failed to parse message");
-    }
-    result
+    let result = T::parse(&buffer)?;
+    Ok(result)
 }
 
+/// Parses an incomplete message of fixed length N.
+/// If the message is not complete, it will attempt to parse an incomplete message.
+/// If the message is not parseable, it will return an error.
+///
+/// # Arguments
+/// * `consumer` - A consumer of bytes - RingBuf crate
+/// * `N` - The fixed length of the message. This is used to determine the number of bytes required to parse the message.
+/// * `T` - The type of message to parse
+/// * `C` - The type of consumer
 fn parse_incomplete_message<T, C, const N: usize>(
     consumer: &mut C,
     message_buffer: &mut [u8; N],
     mut message_buffer_len: usize,
 ) -> Result<T, ParseError>
 where
-    T: Parse + BinaryMessageLength,
     C: Consumer<Item = u8>,
+    T: Parse,
 {
     loop {
-        let remaining_required_bytes = T::LENGTH - message_buffer_len;
+        let remaining_required_bytes = N - message_buffer_len;
         if remaining_required_bytes == 0 {
             // No more bytes required
             break;
@@ -73,12 +89,13 @@ where
         );
         message_buffer_len += bytes_read;
     }
-    T::parse(&message_buffer[..T::LENGTH])
+    T::parse(&message_buffer[..N])
 }
 
 #[allow(unused_variables)]
 pub fn main() -> Result<(), io::Error> {
     let mut file = File::open("/home/luke/fastasx/data/12302019.NASDAQ_ITCH50")?;
+    env_logger::init();
 
     let rb = HeapRb::<u8>::new(RING_BUFFER_SIZE); // Ringbuffer
     let (mut producer, mut consumer) = rb.split();
@@ -88,6 +105,8 @@ pub fn main() -> Result<(), io::Error> {
     let mut msg_ct: u64 = 0;
 
     let producer_done = AtomicBool::new(false);
+
+    let stock_directory_manager = stockdirectory::StockDirectoryManager::new();
 
     std::thread::scope(|s| {
         s.spawn(|| -> Result<(), io::Error> {
@@ -100,15 +119,14 @@ pub fn main() -> Result<(), io::Error> {
                 }
                 let bytes_read = file.read(&mut file_buffer)?;
                 total_bytes_read += bytes_read as f64 / 1024.0 / 1024.0 / 1024.0;
-                // println!("Read {} bytes", bytes_read);
 
                 if bytes_read == 0 {
-                    println!("End of file");
+                    log::info!("End of file");
                     break;
                 }
                 producer.push_slice(&file_buffer[..bytes_read]);
             }
-            println!("Producer done: {total_bytes_read:.2}gb");
+            println!("EOF, Producer done: {total_bytes_read:.2}gb");
             producer_done.store(true, std::sync::atomic::Ordering::Relaxed);
             Ok(())
         });
@@ -122,7 +140,7 @@ pub fn main() -> Result<(), io::Error> {
                 consumer.pop_slice(&mut consumer_slice_size);
                 let length = BigEndian::read_u16(&consumer_slice_size[0..2]);
                 if length > 50 {
-                    println!("Message length too long: {:?}", length);
+                    log::warn!("Message length too long: {:?}", length);
                     // consumer.pop_slice(&mut vec![0u8; length as usize]);
                     continue;
                 };
@@ -135,47 +153,7 @@ pub fn main() -> Result<(), io::Error> {
                         >(&mut consumer)
                         .expect("msg parse failed");
                         msg_ct += 1;
-                        // println!("{:?}", event);
-                    }
-                    &trademessages::BrokenTrade::MESSAGE_TYPE => {
-                        parse_fixed_length_message::<
-                            { trademessages::BrokenTrade::LENGTH },
-                            trademessages::BrokenTrade,
-                            _,
-                        >(&mut consumer)
-                        .expect("msg parse failed");
-                        msg_ct += 1;
-                        // println!("{:?}", event);
-                    }
-                    &modifyordermessages::OrderExecutedWithPrice::MESSAGE_TYPE => {
-                        parse_fixed_length_message::<
-                            { modifyordermessages::OrderExecutedWithPrice::LENGTH },
-                            modifyordermessages::OrderExecutedWithPrice,
-                            _,
-                        >(&mut consumer)
-                        .expect("msg parse failed");
-                        msg_ct += 1;
-                        // println!("{:?}", event);
-                    }
-                    &modifyordermessages::OrderDelete::MESSAGE_TYPE => {
-                        parse_fixed_length_message::<
-                            { modifyordermessages::OrderDelete::LENGTH },
-                            modifyordermessages::OrderDelete,
-                            _,
-                        >(&mut consumer)
-                        .expect("msg parse failed");
-                        msg_ct += 1;
-                        // println!("{:?}", event);
-                    }
-                    &modifyordermessages::OrderExecuted::MESSAGE_TYPE => {
-                        parse_fixed_length_message::<
-                            { modifyordermessages::OrderExecuted::LENGTH },
-                            modifyordermessages::OrderExecuted,
-                            _,
-                        >(&mut consumer)
-                        .expect("msg parse failed");
-                        msg_ct += 1;
-                        // println!("{:?}", event);
+                        log::trace!("Parsed AddOrder");
                     }
                     &addordermessages::AddOrder::ALT_MESSAGE_TYPE => {
                         let order = parse_fixed_length_message::<
@@ -185,7 +163,47 @@ pub fn main() -> Result<(), io::Error> {
                         >(&mut consumer)
                         .expect("msg parse failed");
                         msg_ct += 1;
-                        // println!("{:?}", event);
+                        log::trace!("Parsed AddOrder");
+                    }
+                    &trademessages::BrokenTrade::MESSAGE_TYPE => {
+                        parse_fixed_length_message::<
+                            { trademessages::BrokenTrade::LENGTH },
+                            trademessages::BrokenTrade,
+                            _,
+                        >(&mut consumer)
+                        .expect("msg parse failed");
+                        msg_ct += 1;
+                        log::trace!("Parsed BrokenTrade");
+                    }
+                    &modifyordermessages::OrderExecutedWithPrice::MESSAGE_TYPE => {
+                        parse_fixed_length_message::<
+                            { modifyordermessages::OrderExecutedWithPrice::LENGTH },
+                            modifyordermessages::OrderExecutedWithPrice,
+                            _,
+                        >(&mut consumer)
+                        .expect("msg parse failed");
+                        msg_ct += 1;
+                        log::trace!("Parsed OrderExecutedWithPrice");
+                    }
+                    &modifyordermessages::OrderDelete::MESSAGE_TYPE => {
+                        parse_fixed_length_message::<
+                            { modifyordermessages::OrderDelete::LENGTH },
+                            modifyordermessages::OrderDelete,
+                            _,
+                        >(&mut consumer)
+                        .expect("msg parse failed");
+                        msg_ct += 1;
+                        log::trace!("Parsed OrderDelete");
+                    }
+                    &modifyordermessages::OrderExecuted::MESSAGE_TYPE => {
+                        parse_fixed_length_message::<
+                            { modifyordermessages::OrderExecuted::LENGTH },
+                            modifyordermessages::OrderExecuted,
+                            _,
+                        >(&mut consumer)
+                        .expect("msg parse failed");
+                        msg_ct += 1;
+                        log::trace!("Parsed OrderExecuted");
                     }
                     &stockmessages::StockTradingAction::MESSAGE_TYPE => {
                         parse_fixed_length_message::<
@@ -195,7 +213,7 @@ pub fn main() -> Result<(), io::Error> {
                         >(&mut consumer)
                         .expect("msg parse failed");
                         msg_ct += 1;
-                        // println!("{:?}", event);
+                        log::trace!("Parsed StockTradingAction");
                     }
                     &noiimessages::NetOrderImbalanceIndicator::MESSAGE_TYPE => {
                         parse_fixed_length_message::<
@@ -205,7 +223,7 @@ pub fn main() -> Result<(), io::Error> {
                         >(&mut consumer)
                         .expect("msg parse failed");
                         msg_ct += 1;
-                        // println!("{:?}", event);
+                        log::trace!("Parsed NetOrderImbalanceIndicator");
                     }
                     &stockmessages::IPOQuotingPeriodUpdate::MESSAGE_TYPE => {
                         parse_fixed_length_message::<
@@ -215,7 +233,7 @@ pub fn main() -> Result<(), io::Error> {
                         >(&mut consumer)
                         .expect(&format!("{consumer_slice_size:x?} msg parse failed"));
                         msg_ct += 1;
-                        // println!("{:?}", event);
+                        log::trace!("Parsed IPOQuotingPeriodUpdate");
                     }
                     &stockmessages::MarketParticipantPosition::MESSAGE_TYPE => {
                         parse_fixed_length_message::<
@@ -225,7 +243,7 @@ pub fn main() -> Result<(), io::Error> {
                         >(&mut consumer)
                         .expect("msg parse failed");
                         msg_ct += 1;
-                        // println!("{:?}", event);
+                        log::trace!("Parsed MarketParticipantPosition");
                     }
                     &noiimessages::RetailPriceImprovementIndicator::MESSAGE_TYPE => {
                         parse_fixed_length_message::<
@@ -235,7 +253,7 @@ pub fn main() -> Result<(), io::Error> {
                         >(&mut consumer)
                         .expect("msg parse failed");
                         msg_ct += 1;
-                        // println!("{:?}", event);
+                        log::trace!("Parsed RetailPriceImprovementIndicator");
                     }
                     &trademessages::NonCrossingTrade::MESSAGE_TYPE => {
                         parse_fixed_length_message::<
@@ -245,7 +263,7 @@ pub fn main() -> Result<(), io::Error> {
                         >(&mut consumer)
                         .expect("msg parse failed");
                         msg_ct += 1;
-                        // println!("{:?}", event);
+                        log::trace!("Parsed NonCrossingTrade");
                     }
                     &trademessages::CrossingTrade::MESSAGE_TYPE => {
                         parse_fixed_length_message::<
@@ -255,17 +273,19 @@ pub fn main() -> Result<(), io::Error> {
                         >(&mut consumer)
                         .expect("msg parse failed");
                         msg_ct += 1;
-                        // println!("{:?}", event);
+                        log::trace!("Parsed CrossingTrade");
                     }
                     &stockmessages::StockDirectory::MESSAGE_TYPE => {
-                        parse_fixed_length_message::<
+                        let message = parse_fixed_length_message::<
                             { stockmessages::StockDirectory::LENGTH },
                             stockmessages::StockDirectory,
                             _,
                         >(&mut consumer)
                         .expect("msg parse failed");
+
+                        stock_directory_manager.add_stock(message);
                         msg_ct += 1;
-                        // println!("{:?}", event);
+                        log::trace!("Parsed StockDirectory");
                     }
                     &systemmessages::SystemEventMessage::MESSAGE_TYPE => {
                         parse_fixed_length_message::<
@@ -275,7 +295,7 @@ pub fn main() -> Result<(), io::Error> {
                         >(&mut consumer)
                         .expect("msg parse failed");
                         msg_ct += 1;
-                        // println!("{:?}", event);
+                        log::trace!("Parsed SystemEventMessage");
                     }
                     &modifyordermessages::OrderReplace::MESSAGE_TYPE => {
                         parse_fixed_length_message::<
@@ -285,7 +305,7 @@ pub fn main() -> Result<(), io::Error> {
                         >(&mut consumer)
                         .expect("msg parse failed");
                         msg_ct += 1;
-                        // println!("{:?}", event);
+                        log::trace!("Parsed OrderReplace");
                     }
                     &stockmessages::MWCBDeclineLevel::MESSAGE_TYPE => {
                         parse_fixed_length_message::<
@@ -295,7 +315,7 @@ pub fn main() -> Result<(), io::Error> {
                         >(&mut consumer)
                         .expect("msg parse failed");
                         msg_ct += 1;
-                        // println!("{:?}", event);
+                        log::trace!("Parsed MWCBDeclineLevel");
                     }
                     &stockmessages::MWCBStatus::MESSAGE_TYPE => {
                         parse_fixed_length_message::<
@@ -305,7 +325,7 @@ pub fn main() -> Result<(), io::Error> {
                         >(&mut consumer)
                         .expect("msg parse failed");
                         msg_ct += 1;
-                        // println!("{:?}", event);
+                        log::trace!("Parsed MWCBStatus");
                     }
                     &modifyordermessages::OrderCancel::MESSAGE_TYPE => {
                         parse_fixed_length_message::<
@@ -315,7 +335,7 @@ pub fn main() -> Result<(), io::Error> {
                         >(&mut consumer)
                         .expect("msg parse failed");
                         msg_ct += 1;
-                        // println!("{:?}", event);
+                        log::trace!("Parsed OrderCancel");
                     }
                     &stockmessages::RegSHOShortSalePriceTestRestriction::MESSAGE_TYPE => {
                         parse_fixed_length_message::<
@@ -325,14 +345,14 @@ pub fn main() -> Result<(), io::Error> {
                         >(&mut consumer)
                         .expect("msg parse failed");
                         msg_ct += 1;
-                        // println!("{:?}", event);
+                        log::trace!("Parsed RegSHOShortSalePriceTestRestriction");
                     }
                     _ => {
                         consumer.pop_slice(&mut consumer_slice_size); // Skip useless bytes
                     }
                 }
                 if msg_ct % 1_000_000 == 1 {
-                    println!("Processed {}m messages.", msg_ct / 1_000_000,);
+                    log::info!("Processed {}m messages.", msg_ct / 1_000_000);
                 }
                 consumer_slice_size = [0u8; 3];
             }

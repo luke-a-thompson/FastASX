@@ -1,7 +1,7 @@
 use crate::enums::{
     BoolOrUnavailable, FinancialStatusIndicator, IPOReleaseQualifier, IssueClassificationCodes,
-    MWCBLevel, MarketCategory, MarketMakerMode, MarketParticipantState, RegSHOAction,
-    ShortSaleThresholdIndicator, TradingReasonCodes, TradingState,
+    LuldReferencePriceTier, MWCBLevel, MarketCategory, MarketMakerMode, MarketParticipantState,
+    RegSHOAction, ShortSaleThresholdIndicator, TradingReasonCodes, TradingState,
 };
 use crate::helpers::{byte_to_bool, byte_to_bool_space};
 use crate::messageheader::MessageHeader;
@@ -9,27 +9,27 @@ use crate::types::{BinaryMessageLength, MessageHeaderType, Parse, ParseError, St
 use byteorder::{BigEndian, ByteOrder};
 
 #[cfg(any(test, feature = "bench"))]
-use crate::types::{EnumTestHelpers, GenerateBinaryExample};
+use crate::types::{EnumTestHelpers, GenerateExampleMessage};
 #[cfg(any(test, feature = "bench"))]
 use fastrand::Rng;
 
 #[derive(Debug, PartialEq)]
 pub struct StockDirectory {
-    header: MessageHeader,
-    stock: Stock,
-    market_category: MarketCategory,
-    financial_status_indicator: FinancialStatusIndicator,
-    round_lot_size: u32,
-    round_lots_only: bool,
-    issue_classification: IssueClassificationCodes,
-    issue_sub_type: u16,
-    authenticity: char,
-    short_sale_threshold_indicator: ShortSaleThresholdIndicator,
-    ipo_flag: char,
-    luld_reference_price_tier: char,
-    etp_flag: BoolOrUnavailable,
-    etp_leverage_factor: u32,
-    inverse_indicator: bool,
+    pub header: MessageHeader,
+    pub stock: Stock,
+    pub market_category: MarketCategory,
+    pub financial_status_indicator: FinancialStatusIndicator,
+    pub round_lot_size: u32,
+    pub round_lots_only: bool,
+    pub issue_classification: IssueClassificationCodes,
+    pub issue_sub_type: u16,
+    pub authenticity: char,
+    pub short_sale_threshold_indicator: ShortSaleThresholdIndicator,
+    pub ipo_flag: BoolOrUnavailable,
+    pub luld_reference_price_tier: LuldReferencePriceTier,
+    pub etp_flag: BoolOrUnavailable,
+    pub etp_leverage_factor: u32,
+    pub inverse_indicator: bool,
 }
 
 impl Parse for StockDirectory {
@@ -51,8 +51,8 @@ impl Parse for StockDirectory {
             issue_sub_type: BigEndian::read_u16(&input[26..28]),
             authenticity: input[28] as char,
             short_sale_threshold_indicator: ShortSaleThresholdIndicator::try_from(input[29])?,
-            ipo_flag: input[30] as char,
-            luld_reference_price_tier: input[31] as char,
+            ipo_flag: byte_to_bool_space(input[30])?,
+            luld_reference_price_tier: LuldReferencePriceTier::try_from(input[31])?,
             etp_flag: byte_to_bool_space(input[32])?,
             etp_leverage_factor: BigEndian::read_u32(&input[33..37]),
             inverse_indicator: byte_to_bool(input[37])?, // We only read up to index 37 (38 bytes), 1 less because of match. max spec offset-1
@@ -69,11 +69,11 @@ impl MessageHeaderType for StockDirectory {
 }
 
 #[cfg(any(test, feature = "bench"))]
-impl GenerateBinaryExample<{ Self::LENGTH }> for StockDirectory {
-    fn generate_example_message() -> [u8; Self::LENGTH] {
+impl GenerateExampleMessage<{ Self::LENGTH }> for StockDirectory {
+    fn generate_binary_example() -> [u8; Self::LENGTH] {
         let mut rng = Rng::new();
 
-        let header = MessageHeader::generate_example_message();
+        let header = MessageHeader::generate_binary_example();
         let stock = rng.u64(..).to_be_bytes();
         let market_category = MarketCategory::generate_example_code();
         let financial_status_indicator = FinancialStatusIndicator::generate_example_code();
@@ -147,11 +147,11 @@ impl MessageHeaderType for StockTradingAction {
 }
 
 #[cfg(any(test, feature = "bench"))]
-impl GenerateBinaryExample<{ Self::LENGTH }> for StockTradingAction {
-    fn generate_example_message() -> [u8; Self::LENGTH] {
+impl GenerateExampleMessage<{ Self::LENGTH }> for StockTradingAction {
+    fn generate_binary_example() -> [u8; Self::LENGTH] {
         let mut rng = Rng::new();
 
-        let header = MessageHeader::generate_example_message();
+        let header = MessageHeader::generate_binary_example();
         let stock = rng.u64(..).to_be_bytes();
         let trading_state = TradingState::generate_example_code();
         let reserved = rng.u8(..);
@@ -201,11 +201,11 @@ impl MessageHeaderType for RegSHOShortSalePriceTestRestriction {
 }
 
 #[cfg(any(test, feature = "bench"))]
-impl GenerateBinaryExample<{ Self::LENGTH }> for RegSHOShortSalePriceTestRestriction {
-    fn generate_example_message() -> [u8; Self::LENGTH] {
+impl GenerateExampleMessage<{ Self::LENGTH }> for RegSHOShortSalePriceTestRestriction {
+    fn generate_binary_example() -> [u8; Self::LENGTH] {
         let mut rng = Rng::new();
 
-        let header = MessageHeader::generate_example_message();
+        let header = MessageHeader::generate_binary_example();
         let stock = rng.u64(..).to_be_bytes();
         let reg_sho_action = RegSHOAction::generate_example_code();
 
@@ -257,11 +257,11 @@ impl MessageHeaderType for MarketParticipantPosition {
 }
 
 #[cfg(any(test, feature = "bench"))]
-impl GenerateBinaryExample<{ Self::LENGTH }> for MarketParticipantPosition {
-    fn generate_example_message() -> [u8; Self::LENGTH] {
+impl GenerateExampleMessage<{ Self::LENGTH }> for MarketParticipantPosition {
+    fn generate_binary_example() -> [u8; Self::LENGTH] {
         let mut rng = Rng::new();
 
-        let header = MessageHeader::generate_example_message();
+        let header = MessageHeader::generate_binary_example();
         let mp_id = rng.u32(..).to_be_bytes();
         let stock = rng.u64(..).to_be_bytes();
         let primary_market_maker = b'Y';
@@ -316,11 +316,11 @@ impl MessageHeaderType for MWCBDeclineLevel {
 }
 
 #[cfg(any(test, feature = "bench"))]
-impl GenerateBinaryExample<{ Self::LENGTH }> for MWCBDeclineLevel {
-    fn generate_example_message() -> [u8; Self::LENGTH] {
+impl GenerateExampleMessage<{ Self::LENGTH }> for MWCBDeclineLevel {
+    fn generate_binary_example() -> [u8; Self::LENGTH] {
         let mut rng = Rng::new();
 
-        let header = MessageHeader::generate_example_message();
+        let header = MessageHeader::generate_binary_example();
         let level1 = rng.u64(..).to_be_bytes();
         let level2 = rng.u64(..).to_be_bytes();
         let level3 = rng.u64(..).to_be_bytes();
@@ -366,9 +366,9 @@ impl MessageHeaderType for MWCBStatus {
 }
 
 #[cfg(any(test, feature = "bench"))]
-impl GenerateBinaryExample<{ Self::LENGTH }> for MWCBStatus {
-    fn generate_example_message() -> [u8; Self::LENGTH] {
-        let header = MessageHeader::generate_example_message();
+impl GenerateExampleMessage<{ Self::LENGTH }> for MWCBStatus {
+    fn generate_binary_example() -> [u8; Self::LENGTH] {
+        let header = MessageHeader::generate_binary_example();
         let breached_level = MWCBLevel::generate_example_code();
 
         // Concatenate the arrays into a final message
@@ -416,11 +416,11 @@ impl MessageHeaderType for IPOQuotingPeriodUpdate {
 }
 
 #[cfg(any(test, feature = "bench"))]
-impl GenerateBinaryExample<{ Self::LENGTH }> for IPOQuotingPeriodUpdate {
-    fn generate_example_message() -> [u8; Self::LENGTH] {
+impl GenerateExampleMessage<{ Self::LENGTH }> for IPOQuotingPeriodUpdate {
+    fn generate_binary_example() -> [u8; Self::LENGTH] {
         let mut rng = Rng::new();
 
-        let header = MessageHeader::generate_example_message();
+        let header = MessageHeader::generate_binary_example();
         let stock = rng.u64(..).to_be_bytes();
         let ipo_quotation_release_time = rng.u32(..).to_be_bytes();
         let ipo_quotation_release_qualifier = IPOReleaseQualifier::generate_example_code();

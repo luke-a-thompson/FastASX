@@ -3,7 +3,7 @@ use crate::{helpers::byte_to_bool, messageheader::MessageHeader};
 use byteorder::{BigEndian, ByteOrder};
 
 #[cfg(any(test, feature = "bench"))]
-use crate::types::GenerateBinaryExample;
+use crate::types::GenerateExampleMessage;
 #[cfg(any(test, feature = "bench"))]
 use fastrand::Rng;
 
@@ -41,11 +41,11 @@ impl MessageHeaderType for OrderExecuted {
 }
 
 #[cfg(any(test, feature = "bench"))]
-impl GenerateBinaryExample<{ Self::LENGTH }> for OrderExecuted {
-    fn generate_example_message() -> [u8; Self::LENGTH] {
+impl GenerateExampleMessage<{ Self::LENGTH }> for OrderExecuted {
+    fn generate_binary_example() -> [u8; Self::LENGTH] {
         let mut rng = Rng::new();
 
-        let header = MessageHeader::generate_example_message();
+        let header = MessageHeader::generate_binary_example();
         let order_reference_number = rng.u64(..).to_be_bytes();
         let executed_shares = rng.u32(..).to_be_bytes();
         let match_number = rng.u64(..).to_be_bytes();
@@ -93,11 +93,11 @@ impl MessageHeaderType for OrderExecutedWithPrice {
 }
 
 #[cfg(any(test, feature = "bench"))]
-impl GenerateBinaryExample<{ Self::LENGTH }> for OrderExecutedWithPrice {
-    fn generate_example_message() -> [u8; Self::LENGTH] {
+impl GenerateExampleMessage<{ Self::LENGTH }> for OrderExecutedWithPrice {
+    fn generate_binary_example() -> [u8; Self::LENGTH] {
         let mut rng = Rng::new();
 
-        let order_executed_message = OrderExecuted::generate_example_message();
+        let order_executed_message = OrderExecuted::generate_binary_example();
         let printable = b'Y';
         let exec_price = rng.u32(..).to_be_bytes();
 
@@ -112,9 +112,9 @@ impl GenerateBinaryExample<{ Self::LENGTH }> for OrderExecutedWithPrice {
 
 #[derive(Debug, PartialEq)]
 pub struct OrderCancel {
-    header: MessageHeader,
-    order_reference_number: u64,
-    canceled_shares: u32,
+    pub header: MessageHeader,
+    pub order_reference_number: u64,
+    pub canceled_shares: u32,
 }
 
 // Byte layout:
@@ -147,11 +147,11 @@ impl MessageHeaderType for OrderCancel {
 }
 
 #[cfg(any(test, feature = "bench"))]
-impl GenerateBinaryExample<{ Self::LENGTH }> for OrderCancel {
-    fn generate_example_message() -> [u8; Self::LENGTH] {
+impl GenerateExampleMessage<{ Self::LENGTH }> for OrderCancel {
+    fn generate_binary_example() -> [u8; Self::LENGTH] {
         let mut rng = Rng::new();
 
-        let header = MessageHeader::generate_example_message();
+        let header = MessageHeader::generate_binary_example();
         let order_reference_number = rng.u64(..).to_be_bytes();
         let canceled_shares = rng.u32(..).to_be_bytes();
 
@@ -166,8 +166,8 @@ impl GenerateBinaryExample<{ Self::LENGTH }> for OrderCancel {
 
 #[derive(Debug, PartialEq)]
 pub struct OrderDelete {
-    header: MessageHeader,
-    order_reference_number: u64,
+    pub header: MessageHeader,
+    pub order_reference_number: u64,
 }
 
 impl Parse for OrderDelete {
@@ -194,11 +194,11 @@ impl MessageHeaderType for OrderDelete {
 }
 
 #[cfg(any(test, feature = "bench"))]
-impl GenerateBinaryExample<{ Self::LENGTH }> for OrderDelete {
-    fn generate_example_message() -> [u8; Self::LENGTH] {
+impl GenerateExampleMessage<{ Self::LENGTH }> for OrderDelete {
+    fn generate_binary_example() -> [u8; Self::LENGTH] {
         let mut rng = Rng::new();
 
-        let header = MessageHeader::generate_example_message();
+        let header = MessageHeader::generate_binary_example();
         let order_reference_number = rng.u64(..).to_be_bytes();
 
         let mut message = [0; Self::LENGTH];
@@ -245,11 +245,11 @@ impl MessageHeaderType for OrderReplace {
 }
 
 #[cfg(any(test, feature = "bench"))]
-impl GenerateBinaryExample<{ Self::LENGTH }> for OrderReplace {
-    fn generate_example_message() -> [u8; Self::LENGTH] {
+impl GenerateExampleMessage<{ Self::LENGTH }> for OrderReplace {
+    fn generate_binary_example() -> [u8; Self::LENGTH] {
         let mut rng = Rng::new();
 
-        let header = MessageHeader::generate_example_message();
+        let header = MessageHeader::generate_binary_example();
         let original_order_reference_number = rng.u64(..).to_be_bytes();
         let new_order_reference_number = rng.u64(..).to_be_bytes();
         let shares = rng.u32(..).to_be_bytes();

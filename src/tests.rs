@@ -7,7 +7,7 @@ use stockmessages::{
 };
 use systemmessages::SystemEventMessage;
 use trademessages::{BrokenTrade, CrossingTrade, NonCrossingTrade};
-use types::{GenerateExampleMessage};
+use types::GenerateExampleMessage;
 
 use super::*;
 

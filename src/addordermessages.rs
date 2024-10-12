@@ -1,9 +1,9 @@
 use crate::enums::BuySellIndicator;
 use crate::messageheader::MessageHeader;
-use crate::types::MPID;
+use crate::types::{PriceConversions, MPID};
 use crate::types::{
     AltBinaryMessageLength, AltMessageHeaderType, BinaryMessageLength, MessageHeaderType, Parse,
-    ParseError, Stock,
+    ParseError, Price4, Stock,
 };
 use byteorder::{BigEndian, ByteOrder};
 
@@ -19,7 +19,7 @@ pub struct AddOrder {
     pub buy_sell_indicator: BuySellIndicator,
     pub shares: u32,
     pub stock: Stock,
-    pub price: u32,
+    pub price: Price4,
     pub mpid: Option<MPID>,
 }
 
@@ -37,7 +37,7 @@ impl Parse for AddOrder {
             buy_sell_indicator: BuySellIndicator::try_from(input[18])?,
             shares: BigEndian::read_u32(&input[19..23]),
             stock: input[23..31].try_into().unwrap(),
-            price: BigEndian::read_u32(&input[31..35]),
+            price: Price4::new(BigEndian::read_u32(&input[31..35])),
             mpid: if input.len() == Self::LENGTH {
                 None
             } else {

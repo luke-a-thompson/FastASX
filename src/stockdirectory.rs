@@ -2,50 +2,52 @@ use crate::enums::{
     BoolOrUnavailable, FinancialStatusIndicator, IssueClassificationCodes, LuldReferencePriceTier,
     MarketCategory, ShortSaleThresholdIndicator,
 };
+use crate::orderbook::StockLocateCode;
 use crate::stockmessages::StockDirectory;
 use crate::types::Stock;
 use std::collections::HashMap;
 use std::fmt;
-use std::sync::{Arc, RwLock};
 
 #[derive(Debug)]
 pub struct StockDirectoryManager {
-    directory: Arc<RwLock<HashMap<u16, StockData>>>,
+    pub directory: HashMap<StockLocateCode, StockData>,
+    pub stock_to_stock_locate: HashMap<Stock, StockLocateCode>,
 }
 
 impl StockDirectoryManager {
     pub fn new() -> Self {
         Self {
-            directory: Arc::new(RwLock::new(HashMap::new())),
+            directory: HashMap::new(),
+            stock_to_stock_locate: HashMap::new(),
         }
     }
 
-    pub fn add_stock(&self, stock: StockDirectory) {
+    pub fn add_stock(&mut self, message: StockDirectory) {
         log::debug!(
             "Adding stock: {}",
-            std::str::from_utf8(&stock.stock).unwrap()
+            std::str::from_utf8(&message.stock).unwrap()
         );
-        let mut directory = self.directory.write().unwrap(); // Lock for writing
-        directory
-            .entry(stock.header.stock_locate)
-            .or_insert(StockData::new(stock));
+        self.stock_to_stock_locate
+            .insert(message.stock.clone(), message.header.stock_locate.clone());
+
+        self.directory
+            .entry(message.header.stock_locate)
+            .or_insert(StockData::new(message));
     }
 
     pub fn get_stock_data(&self, stock_locate: u16) -> Option<StockData> {
-        let directory = self.directory.read().unwrap(); // Lock for reading
-        let stock_data = directory.get(&stock_locate)?; // Return a cloned version of StockData
+        let stock_data = self.directory.get(&stock_locate)?; // Return a cloned version of StockData
         Some(stock_data.clone())
     }
 
-    pub fn get_stock(&self, stock_locate: u16) -> Option<Stock> {
-        let directory = self.directory.read().unwrap(); // Lock for reading
-        let stock_data = directory.get(&stock_locate)?;
+    pub fn locate_to_stock(&self, stock_locate: u16) -> Option<Stock> {
+        let stock_data = self.directory.get(&stock_locate)?;
         Some(stock_data.stock.clone())
     }
 
-    // Get the Arc clone: Allows sharing the manager across threads
-    pub fn get_shared_manager(&self) -> Arc<RwLock<HashMap<u16, StockData>>> {
-        Arc::clone(&self.directory)
+    pub fn stock_to_locate(&self, stock: Stock) -> Option<StockLocateCode> {
+        let stock_locate = self.stock_to_stock_locate.get(&stock)?;
+        Some(*stock_locate)
     }
 }
 

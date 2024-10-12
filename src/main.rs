@@ -1,11 +1,14 @@
 #![feature(test)]
 extern crate test;
 
+use crate::tui::run;
 use byteorder::{BigEndian, ByteOrder};
+use orderbook::OrderBookManager;
 use ringbuf::{traits::*, HeapRb};
 use std::fs::File;
 use std::io::{self, Read};
 use std::sync::atomic::AtomicBool;
+use std::sync::{Arc, RwLock};
 use types::{
     AltBinaryMessageLength, AltMessageHeaderType, BinaryMessageLength, MessageHeaderType, Parse,
     ParseError,
@@ -25,6 +28,7 @@ pub mod stockdirectory;
 pub mod stockmessages;
 pub mod systemmessages;
 pub mod trademessages;
+pub mod tui;
 pub mod types;
 
 const FILE_BUFFER_SIZE: usize = 2048 * 64; // Stack allocated
@@ -94,8 +98,9 @@ where
 
 #[allow(unused_variables)]
 pub fn main() -> Result<(), io::Error> {
-    let mut file = File::open("/home/luke/fastasx/data/12302019.NASDAQ_ITCH50")?;
     env_logger::init();
+
+    let mut file = File::open("/home/luke/fastasx/data/12302019.NASDAQ_ITCH50")?;
 
     let rb = HeapRb::<u8>::new(RING_BUFFER_SIZE); // Ringbuffer
     let (mut producer, mut consumer) = rb.split();
@@ -107,8 +112,11 @@ pub fn main() -> Result<(), io::Error> {
 
     let producer_done = AtomicBool::new(false);
 
-    let mut order_book_manager = orderbook::OrderBookManager::new();
-    let stock_directory_manager = stockdirectory::StockDirectoryManager::new();
+    let order_book_manager = Arc::new(RwLock::new(OrderBookManager::new()));
+    let order_book_manager_clone = Arc::clone(&order_book_manager);
+
+    let stock_directory_manager = Arc::new(RwLock::new(stockdirectory::StockDirectoryManager::new()));
+    let stock_directory_manager_clone = Arc::clone(&stock_directory_manager);
 
     std::thread::scope(|s| {
         s.spawn(|| -> Result<(), io::Error> {
@@ -128,8 +136,8 @@ pub fn main() -> Result<(), io::Error> {
                 }
                 producer.push_slice(&file_buffer[..bytes_read]);
             }
-            println!("EOF, Producer done: {total_bytes_read:.2}gb");
             producer_done.store(true, std::sync::atomic::Ordering::Relaxed);
+            println!("EOF, Producer done: {total_bytes_read:.2}gb");
             Ok(())
         });
         s.spawn(|| -> Result<(), io::Error> {
@@ -154,6 +162,8 @@ pub fn main() -> Result<(), io::Error> {
                         >(&mut consumer)
                         .expect("msg parse failed");
                         order_book_manager
+                            .write()
+                            .unwrap()
                             .add_order(order)
                             .expect("order book add failed");
                         msg_ct += 1;
@@ -167,6 +177,8 @@ pub fn main() -> Result<(), io::Error> {
                         >(&mut consumer)
                         .expect("msg parse failed");
                         order_book_manager
+                            .write()
+                            .unwrap()
                             .add_order(order)
                             .expect("order book add failed");
                         msg_ct += 1;
@@ -190,6 +202,8 @@ pub fn main() -> Result<(), io::Error> {
                         >(&mut consumer)
                         .expect("msg parse failed");
                         order_book_manager
+                            .write()
+                            .unwrap()
                             .execute_order(order)
                             .expect("order book execute failed");
                         msg_ct += 1;
@@ -213,6 +227,8 @@ pub fn main() -> Result<(), io::Error> {
                         >(&mut consumer)
                         .expect("msg parse failed");
                         order_book_manager
+                            .write()
+                            .unwrap()
                             .delete_order(order)
                             .expect("order book delete failed");
                         msg_ct += 1;
@@ -296,7 +312,7 @@ pub fn main() -> Result<(), io::Error> {
                         >(&mut consumer)
                         .expect("msg parse failed");
 
-                        stock_directory_manager.add_stock(message);
+                        stock_directory_manager.write().unwrap().add_stock(message);
                         msg_ct += 1;
                         log::trace!("Parsed StockDirectory");
                     }
@@ -318,6 +334,8 @@ pub fn main() -> Result<(), io::Error> {
                         >(&mut consumer)
                         .expect("msg parse failed");
                         order_book_manager
+                            .write()
+                            .unwrap()
                             .replace_order(order)
                             .expect("order book replace failed");
                         msg_ct += 1;
@@ -351,6 +369,8 @@ pub fn main() -> Result<(), io::Error> {
                         >(&mut consumer)
                         .expect("msg parse failed");
                         order_book_manager
+                            .write()
+                            .unwrap()
                             .cancel_order(order)
                             .expect("order book cancel failed");
                         msg_ct += 1;
@@ -372,7 +392,7 @@ pub fn main() -> Result<(), io::Error> {
                 }
                 if msg_ct % 1_000_000 == 0 {
                     let elapsed = last_million_time.elapsed();
-                    println!(
+                    log::debug!(
                         "Processed {}m messages in {:.2?} ({:.2}m messages/second)",
                         msg_ct / 1_000_000,
                         elapsed,
@@ -383,6 +403,17 @@ pub fn main() -> Result<(), io::Error> {
                 consumer_slice_size = [0u8; 3];
             }
             Ok(())
+        });
+        s.spawn(move || -> Result<(), io::Error> {
+            let mut terminal = ratatui::init();
+            terminal.clear()?;
+            let app_result = run(
+                terminal,
+                order_book_manager_clone,
+                stock_directory_manager_clone,
+            );
+            ratatui::restore();
+            app_result
         });
     });
     Ok(())

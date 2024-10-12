@@ -1,4 +1,4 @@
-use crate::types::{BinaryMessageLength, MessageHeaderType, Parse, ParseError};
+use crate::types::{BinaryMessageLength, MessageHeaderType, Parse, ParseError, Price4, PriceConversions};
 use crate::{helpers::byte_to_bool, messageheader::MessageHeader};
 use byteorder::{BigEndian, ByteOrder};
 
@@ -64,7 +64,7 @@ impl GenerateExampleMessage<{ Self::LENGTH }> for OrderExecuted {
 pub struct OrderExecutedWithPrice {
     pub order_executed_message: OrderExecuted,
     pub printable: bool,
-    pub exec_price: u32,
+    pub exec_price: Price4,
 }
 
 impl Parse for OrderExecutedWithPrice {
@@ -79,7 +79,7 @@ impl Parse for OrderExecutedWithPrice {
             order_executed_message: OrderExecuted::parse(&input[..30])
                 .expect("Failed to parse OrderExecutedWithPrice: Invalid order_executed header."),
             printable: byte_to_bool(input[30])?,
-            exec_price: BigEndian::read_u32(&input[31..35]),
+            exec_price: Price4::new(BigEndian::read_u32(&input[31..35])),
         })
     }
 }
@@ -215,7 +215,7 @@ pub struct OrderReplace {
     pub original_order_reference_number: u64,
     pub new_order_reference_number: u64, // Assert old order dropped?
     pub shares: u32,
-    pub price: u32,
+    pub price: Price4,
 }
 
 impl Parse for OrderReplace {
@@ -231,7 +231,7 @@ impl Parse for OrderReplace {
             original_order_reference_number: BigEndian::read_u64(&input[10..18]),
             new_order_reference_number: BigEndian::read_u64(&input[18..26]),
             shares: BigEndian::read_u32(&input[26..30]),
-            price: BigEndian::read_u32(&input[30..34]),
+            price: Price4::new(BigEndian::read_u32(&input[30..34])),
         })
     }
 }

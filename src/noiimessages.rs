@@ -1,6 +1,6 @@
 use crate::enums::{CrossType, ImbalanceDirection};
 use crate::messageheader::MessageHeader;
-use crate::types::{BinaryMessageLength, MessageHeaderType, Parse, ParseError, Stock};
+use crate::types::{BinaryMessageLength, MessageHeaderType, Parse, ParseError, Price4, PriceConversions, Stock};
 use byteorder::{BigEndian, ByteOrder};
 
 #[cfg(any(test, feature = "bench"))]
@@ -15,9 +15,9 @@ pub struct NetOrderImbalanceIndicator {
     imbalance_shares: u64,
     imbalance_direction: ImbalanceDirection,
     stock: Stock,
-    far_price: u32,
-    near_price: u32,
-    current_reference_price: u32,
+    far_price: Price4,
+    near_price: Price4,
+    current_reference_price: Price4,
     cross_type: CrossType,
     price_variation_indicator: char,
 }
@@ -34,9 +34,9 @@ impl Parse for NetOrderImbalanceIndicator {
             imbalance_shares: BigEndian::read_u64(&input[18..26]),
             imbalance_direction: ImbalanceDirection::try_from(input[26])?,
             stock: input[27..35].try_into().unwrap(),
-            far_price: BigEndian::read_u32(&input[35..39]),
-            near_price: BigEndian::read_u32(&input[39..43]),
-            current_reference_price: BigEndian::read_u32(&input[43..47]),
+            far_price: Price4::new(BigEndian::read_u32(&input[35..39])),
+            near_price: Price4::new(BigEndian::read_u32(&input[39..43])),
+            current_reference_price: Price4::new(BigEndian::read_u32(&input[43..47])),
             cross_type: CrossType::try_from(input[47])?,
             price_variation_indicator: {
                 match input[48] {

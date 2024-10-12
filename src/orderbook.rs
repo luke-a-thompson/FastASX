@@ -3,13 +3,11 @@ use crate::enums::BuySellIndicator;
 use crate::modifyordermessages::{
     OrderCancel, OrderDelete, OrderExecuted, OrderExecutedWithPrice, OrderReplace,
 };
-use crate::stockdirectory::StockDirectoryManager;
-use crate::types::OrderBookError;
+use crate::types::{OrderBookError, Price4};
 use std::cmp::Reverse;
 use std::collections::{BTreeMap, HashMap};
 
-type Price = u32;
-type StockLocateCode = u16;
+pub type StockLocateCode = u16;
 type OrderReferenceNumber = u64;
 
 /// Manages the order books for all stocks.
@@ -18,19 +16,16 @@ type OrderReferenceNumber = u64;
 /// - order_books: This is the stock locate code > limit order book.
 /// - order_price_map: This is the order reference number > (stock locate code, price, buy sell indicator). This is needed as no orders (except buys) have a price.
 pub struct OrderBookManager {
-    order_books: HashMap<StockLocateCode, LimitOrderBook>,
-    order_price_map: HashMap<OrderReferenceNumber, (StockLocateCode, Price, BuySellIndicator)>,
-    stock_directory: StockDirectoryManager,
+    pub order_books: HashMap<StockLocateCode, LimitOrderBook>,
+    order_price_map: HashMap<OrderReferenceNumber, (StockLocateCode, Price4, BuySellIndicator)>,
 }
 
-/// Manages the order books for all stocks.
 impl OrderBookManager {
     pub fn new() -> Self {
         log::debug!("Initialising OrderBookManager");
         Self {
             order_books: HashMap::new(),
             order_price_map: HashMap::new(),
-            stock_directory: StockDirectoryManager::new(),
         }
     }
 
@@ -96,7 +91,7 @@ impl OrderBookManager {
     pub fn execute_order_with_price(
         &mut self,
         order: OrderExecutedWithPrice,
-    ) -> Result<(u64, Price, bool), OrderBookError> {
+    ) -> Result<(u64, Price4, bool), OrderBookError> {
         match self
             .order_price_map
             .get(&order.order_executed_message.order_reference_number)
@@ -226,35 +221,52 @@ impl OrderBookManager {
 }
 
 /// Per stock limit order book.
+///
+/// # Fields
+/// * `ask_book` - The ask book, which is a BTreeMap of prices to PriceBucket.
+/// * `bid_book` - The bid book, which is a BTreeMap of reverse prices to PriceBucket.
+/// * `highest_bid` - The highest bid price.
+/// * `lowest_ask` - The lowest ask price.
 pub struct LimitOrderBook {
-    ask_book: BTreeMap<Price, PriceBucket>,
-    bid_book: BTreeMap<Reverse<Price>, PriceBucket>,
-    lowest_ask: u32,
-    highest_bid: u32,
+    pub ask_book: BTreeMap<Price4, PriceBucket>,
+    pub bid_book: BTreeMap<Reverse<Price4>, PriceBucket>,
+    pub highest_bid: u32,
+    pub lowest_ask: u32,
 }
 
 impl LimitOrderBook {
     pub fn new() -> Self {
+        log::debug!("Creating new limit order book");
         Self {
             ask_book: BTreeMap::new(),
             bid_book: BTreeMap::new(),
-            lowest_ask: 0,
             highest_bid: 0,
+            lowest_ask: 0,
         }
     }
 
     /// Update the lowest ask and highest bid prices.
+    ///
+    /// # Returns
+    /// * `Ok(())` - If the order was added successfully.
+    /// * `Err(OrderBookError)` - If the order could not be added.
     fn update_best_prices(&mut self) {
-        self.lowest_ask = self.ask_book.keys().next().map(|&p| p).unwrap_or(u32::MAX);
-        self.highest_bid = self.bid_book.keys().next().map(|r| r.0).unwrap_or(0);
+        self.lowest_ask = self.ask_book.keys().next().map(|&p| p.value).unwrap_or(u32::MAX);
+        self.highest_bid = self.bid_book.keys().next().map(|r| r.0.value).unwrap_or(0);
     }
 
     /// Get the current spread (difference between lowest ask and highest bid).
+    ///
+    /// # Returns
+    /// * `u32` - The spread between the lowest ask and highest bid.
     pub fn get_spread(&self) -> u32 {
         self.lowest_ask.saturating_sub(self.highest_bid)
     }
 
     /// Get the current best ask price.
+    ///
+    /// # Returns
+    /// * `Option<u32>` - The current best ask price.
     pub fn get_best_ask(&self) -> Option<u32> {
         if self.lowest_ask == u32::MAX {
             None
@@ -264,6 +276,9 @@ impl LimitOrderBook {
     }
 
     /// Get the current best bid price.
+    ///
+    /// # Returns
+    /// * `Option<u32>` - The current best bid price.
     pub fn get_best_bid(&self) -> Option<u32> {
         if self.highest_bid == 0 {
             None
@@ -296,7 +311,7 @@ impl LimitOrderBook {
         &mut self,
         order_reference_number: OrderReferenceNumber,
         cancelled_shares: u32,
-        price: Price,
+        price: Price4,
         buy_sell_indicator: BuySellIndicator,
         order_cancellation: bool, // If true, the order is being cancelled, not executed
     ) -> Result<(), OrderBookError> {
@@ -326,7 +341,7 @@ impl LimitOrderBook {
     pub fn delete_order(
         &mut self,
         order_reference_number: OrderReferenceNumber,
-        price: Price,
+        price: Price4,
         buy_sell_indicator: BuySellIndicator,
     ) -> Result<AddOrder, OrderBookError> {
         match buy_sell_indicator {
@@ -359,7 +374,7 @@ impl LimitOrderBook {
 }
 
 /// A price bucket is a collection of orders at a given price.
-struct PriceBucket {
+pub struct PriceBucket {
     pub share_quantity: u32,
     pub orders: HashMap<OrderReferenceNumber, AddOrder>, // By order reference number
 }
@@ -429,7 +444,7 @@ mod tests {
     use crate::addordermessages::AddOrder;
     use crate::enums::BuySellIndicator;
     use crate::messageheader::MessageHeader;
-    use crate::types::GenerateExampleMessage;
+    use crate::types::{GenerateExampleMessage, PriceConversions};
 
     #[test]
     fn test_add_order_to_book() {
@@ -442,7 +457,7 @@ mod tests {
             buy_sell_indicator: BuySellIndicator::Buy,
             shares: 100,
             stock: *b"AAPL    ", // Stocks are left justified in the spec
-            price: 15000,
+            price: Price4::new(15000u32),
             mpid: None,
         };
         let sell_order = AddOrder {
@@ -451,7 +466,7 @@ mod tests {
             buy_sell_indicator: BuySellIndicator::Sell,
             shares: 50,
             stock: *b"AAPL    ",
-            price: 15100,
+            price: Price4::new(15100u32),
             mpid: Some(*b"JPMC"),
         };
 
@@ -474,7 +489,7 @@ mod tests {
                 .get(&stock_locate)
                 .unwrap()
                 .ask_book
-                .get(&15100)
+                .get(&Price4::new(15100u32))
                 .unwrap()
                 .orders
                 .get(&2) // Order reference number
@@ -488,7 +503,7 @@ mod tests {
                 .get(&stock_locate)
                 .unwrap()
                 .ask_book
-                .get(&15100) // Price bucket
+                .get(&Price4::new(15100u32)) // Price bucket
                 .unwrap()
                 .share_quantity,
             50
@@ -512,7 +527,7 @@ mod tests {
             buy_sell_indicator: BuySellIndicator::Buy,
             shares: 100,
             stock: *b"AAPL    ", // Stocks are left justified in the spec
-            price: 15000,
+            price: Price4::new(15000u32),
             mpid: Some(*b"JPMC"),
         };
 
@@ -575,7 +590,7 @@ mod tests {
             buy_sell_indicator: BuySellIndicator::Buy,
             shares: 100,
             stock: *b"AAPL    ", // Stocks are left justified in the spec
-            price: 15000,
+            price: Price4::new(15000u32),
             mpid: Some(*b"JPMC"),
         };
 
@@ -660,7 +675,7 @@ mod tests {
             buy_sell_indicator: BuySellIndicator::Buy,
             shares: 100,
             stock: *b"AAPL    ",
-            price: 15000,
+            price: Price4::new(15000u32),
             mpid: None,
         };
         book_manager.add_order(initial_order.clone()).unwrap();
@@ -671,7 +686,7 @@ mod tests {
             original_order_reference_number: 1,
             new_order_reference_number: 2,
             shares: 150,
-            price: 15100,
+            price: Price4::new(15100u32),
         };
 
         // Replace the order
@@ -713,7 +728,7 @@ mod tests {
             original_order_reference_number: 999, // Non-existent order
             new_order_reference_number: 3,
             shares: 200,
-            price: 15200,
+            price: Price4::new(15200u32),
         };
 
         let result = book_manager.replace_order(invalid_replace_order);

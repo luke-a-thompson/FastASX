@@ -1,6 +1,6 @@
 use crate::enums::CrossType;
 use crate::messageheader::MessageHeader;
-use crate::types::{BinaryMessageLength, MessageHeaderType, Parse, ParseError, Stock};
+use crate::types::{BinaryMessageLength, MessageHeaderType, Parse, ParseError, Price4, PriceConversions, Stock};
 use byteorder::{BigEndian, ByteOrder};
 
 #[cfg(any(test, feature = "bench"))]
@@ -15,7 +15,7 @@ pub struct NonCrossingTrade {
     buy_sell_indicator: char,
     shares: u32,
     stock: Stock,
-    price: u32,
+    price: Price4,
     match_number: u64,
 }
 
@@ -40,7 +40,7 @@ impl Parse for NonCrossingTrade {
             },
             shares: BigEndian::read_u32(&input[19..23]),
             stock: input[23..31].try_into().unwrap(),
-            price: BigEndian::read_u32(&input[31..35]),
+            price: Price4::new(BigEndian::read_u32(&input[31..35])),
             match_number: BigEndian::read_u64(&input[35..43]),
         })
     }
@@ -85,7 +85,7 @@ pub struct CrossingTrade {
     header: MessageHeader,
     shares: u64, // 64 for crossing trades, 32 for non-crossing trades
     stock: Stock,
-    cross_price: u32,
+    cross_price: Price4,
     match_number: u64,
     cross_type: CrossType,
 }
@@ -102,7 +102,7 @@ impl Parse for CrossingTrade {
             header: MessageHeader::parse(&input[..10]),
             shares: BigEndian::read_u64(&input[10..18]),
             stock: input[18..26].try_into().unwrap(),
-            cross_price: BigEndian::read_u32(&input[26..30]),
+            cross_price: Price4::new(BigEndian::read_u32(&input[26..30])),
             match_number: BigEndian::read_u64(&input[30..38]),
             cross_type: {
                 match input[38] {

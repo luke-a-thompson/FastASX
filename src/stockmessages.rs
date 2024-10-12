@@ -5,7 +5,7 @@ use crate::enums::{
 };
 use crate::helpers::{byte_to_bool, byte_to_bool_space};
 use crate::messageheader::MessageHeader;
-use crate::types::{BinaryMessageLength, MessageHeaderType, Parse, ParseError, Stock};
+use crate::types::{BinaryMessageLength, MessageHeaderType, Parse, ParseError, Price4, Price8, PriceConversions, Stock};
 use byteorder::{BigEndian, ByteOrder};
 
 #[cfg(any(test, feature = "bench"))]
@@ -285,9 +285,9 @@ impl GenerateExampleMessage<{ Self::LENGTH }> for MarketParticipantPosition {
 #[derive(Debug, PartialEq)]
 pub struct MWCBDeclineLevel {
     header: MessageHeader,
-    level1: u64,
-    level2: u64,
-    level3: u64,
+    level1: Price8,
+    level2: Price8,
+    level3: Price8,
 }
 
 impl Parse for MWCBDeclineLevel {
@@ -300,9 +300,9 @@ impl Parse for MWCBDeclineLevel {
 
         Ok(MWCBDeclineLevel {
             header: MessageHeader::parse(&input[..10]),
-            level1: BigEndian::read_u64(&input[10..18]),
-            level2: BigEndian::read_u64(&input[18..26]),
-            level3: BigEndian::read_u64(&input[26..34]),
+            level1: Price8::new(BigEndian::read_u64(&input[10..18])),
+            level2: Price8::new(BigEndian::read_u64(&input[18..26])),
+            level3: Price8::new(BigEndian::read_u64(&input[26..34])),
         })
     }
 }

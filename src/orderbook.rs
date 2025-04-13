@@ -160,7 +160,7 @@ impl OrderBookManager {
             }
             None => {
                 log::warn!("Attempted to replace non-existent order: {:?}", order);
-                Ok(())
+                Err(OrderBookError::NonExistentOrder)
             }
         }
     }
